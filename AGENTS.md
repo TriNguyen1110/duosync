@@ -42,7 +42,7 @@ Read current state:
 awk -F '\t' 'NR>1 {r[$2"\t"$3]=$0} END {for(k in r) print r[k]}' BOARD.tsv | sort
 ```
 
-INIT can pass repository wiring and documentation while SCREEN stays unverified. This is not a loophole to call native features working. Publish the requested initialized repository with that limitation visible. Later, push verified slices only when no other agent has in-flight edits in those paths.
+INIT can pass repository wiring and documentation while SCREEN stays unverified. This is not a loophole to call native features working. Publish the requested initialized repository with that limitation visible. Later, push verified slices only when no other agent has in-flight edits in those paths. The user also requested frequent meaningful team updates: a coherent source handoff that passes portable checks may be pushed to a draft branch for the teammate’s native testing, with review status and unverified behavior explicit. Do not merge that branch or mark SCREEN done without native evidence. Post at most one or two sentences to the shared doc per meaningful milestone; no routine heartbeat comments.
 
 ## Verification and commands
 

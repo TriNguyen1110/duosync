@@ -2,7 +2,7 @@
 
 **DuoSync:** a small companion living beside what you are reading. Tap its floating pet to open the assistant workspace, then tuck it away without losing your place.
 
-For the YC × Bitrig demo, a student reads a physics passage in an embedded browser, selects an idea they do not understand, and turns it into a manipulable visual. The UI should feel contextual and immediate, with the reading surface and the explanation sharing one workspace rather than a sequence of chat pages.
+The product supports everyday reading and browsing: articles, social feeds, PDFs, and earnings reports are all relevant. For the first YC × Bitrig demo, a student reads a physics passage in an embedded browser, selects an idea they do not understand, and turns it into a manipulable visual. The UI should feel contextual and immediate, with the reading surface and the explanation sharing one workspace rather than a sequence of chat pages.
 
 The long-term ambition is an AI-native phone interface with voice, goals, and useful proactive suggestions. Those are product ambitions, not claims about what this starter supports. It is not affiliated with OpenAI/Codex and has no privileged system or cross-app access.
 

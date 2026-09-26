@@ -1,8 +1,8 @@
 # DuoSync
 
-A little companion for what you're looking at. An iOS browser with a floating pet that opens a contextual assistant workspace.
+A little companion for what you're looking at. Read articles, browse social feeds, study a PDF, or explore an earnings report with an agent workspace beside the content. The first implementation uses an embedded web browser and a floating animated pet.
 
-**YC × Bitrig Hacks · September 26, 2026 · initialization only.** This repository is a native starter and a tightly scoped build plan, not a finished AI demo. No live model, voice provider, PDF selection, or Duo integration is connected yet. The iOS app has not been built or run in Simulator: the initialization machine has no Xcode installation.
+**YC × Bitrig Hacks · September 26, 2026 · work in progress.** The first offline reading journey is implemented in source. Foundation context tests pass; native iOS/WebKit, pet interaction, and the compile-gated Duo layout still need the teammate’s Xcode 27.1 beta build and Simulator evidence. Live AI, voice, and PDF extraction are not connected.
 
 ## Start
 
@@ -11,13 +11,13 @@ A little companion for what you're looking at. An iOS browser with a floating pe
 3. Run. The starter loads a bundled reading page without network access. Tap the mint pet to open or close the workspace; drag it to another position. Use the address field to browse an HTTPS page.
 4. Read `AGENTS.md`, `CONTRACT.md`, and `BOARD.tsv` before continuing development.
 
-`python3 scripts/check_scaffold.py` checks repository wiring without Xcode. With Xcode selected, `scripts/build.sh` compiles for a generic iOS Simulator. These are different checks: the first cannot prove the app compiles or its interface works.
+`tests/run_context_tests.sh` runs the Foundation context regressions with Command Line Tools. `python3 scripts/check_scaffold.py` checks repository wiring without Xcode. With Xcode selected, `scripts/build.sh` compiles for a generic iOS Simulator. These are different checks: the first cannot prove the app compiles or its interface works.
 
 ## The one demo we're building
 
 Read a physics explanation → select a confusing passage → tap the pet → explore an interactive pendulum explanation → close the workspace without losing your reading position. On Duo, use the fold-aware arrangement to keep reading and exploration together.
 
-The starter contains the embedded `WKWebView`, a persistent browser instance, a draggable pet toggle, and a clearly labeled assistant placeholder. Selection capture, contextual reasoning, visualization, and Duo behavior are the next slices on the board.
+Implemented source includes a persistent `WKWebView`, draggable animated pet, source-bound selection capture, an explicitly prewritten pendulum explanation, and an interactive small-angle visual. Arbitrary pages can supply a selection but do not receive a fabricated answer. The `DUO_SDK` build flag enables the documented native arrangement path; it still needs SDK/runtime verification.
 
 ## Build order
 
@@ -36,4 +36,4 @@ Freeze features at **14:45 PDT**. Use **14:45–15:15** for verification and rec
 
 Adapted from [TriNguyen1110/hacker-kit](https://github.com/TriNguyen1110/hacker-kit): separate state and UI owners, an append-only board, and a verifier who alone can mark work done. The local source kit is unchanged. Removed scraper, Port, dashboard tooling, and fixed model overrides; shortened ticks to 20 minutes; added native Simulator and Duo checks. `CLAUDE.md` points to the same rules as Codex.
 
-See [the brief](docs/BRIEF.md), [demo script](docs/DEMO.md), and [Duo integration notes](docs/DUO.md). MIT licensed.
+See [the brief](docs/BRIEF.md), [source sync](docs/SOURCE_SYNC.md), [native handoff](docs/TEAM_HANDOFF.md), [pet asset and prompt](docs/PET_ASSET.md), and [motion preview](design/pet-preview.html). MIT licensed.

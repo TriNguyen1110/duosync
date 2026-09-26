@@ -8,3 +8,16 @@ ts	kind	id	value	owner	scope	note
 2026-09-26T19:10:50+00:00	item	live-provider	backlog	backend	DATA	Optional after offline demo; server-side secrets and bounded requests
 2026-09-26T19:10:50+00:00	item	recording	backlog	main	SCREEN	Rehearse and record before 15:15 PDT
 2026-09-26T19:11:10+00:00	item	init	review	main	INIT	Starter committed aa0ea31; scaffold check passes; native runtime unverified
+2026-09-26T19:13:19+00:00	item	init	done	verifier	INIT	PASS scaffold, scheme/resource wiring, commands and public content review at 02178a1; no stale kit tooling or secrets found; native build/UI, Duo and live AI remain unverified
+2026-09-26T19:14:42+00:00	item	page-context	doing	backend	DATA	Implement explicit main-frame capture and source-bound bundled explanation with stale response protection
+2026-09-26T19:17:16+00:00	item	starter-ui	review	frontend	SCREEN	Pet exclusive tap/drag; workspace states and grounded source card; e976415; Swift parse passes; native SCREEN unverified without Xcode
+2026-09-26T19:17:16+00:00	item	pendulum	review	frontend	SCREEN	Interactive length and computed small-angle period; e976415; Swift parse passes; native SCREEN unverified without Xcode
+2026-09-26T19:17:16+00:00	item	duo-layout	review	frontend	SCREEN	Documented ArrangementView split and compact overlay gated DUO_SDK/iOS27.1; e976415; Swift parse both flags passes; native SDK/fold behavior unverified
+2026-09-26T19:19:22+00:00	item	page-context	review	backend	DATA	Commit 0517663: source-bound isolated main-frame capture; 8s timeout and navigation invalidation; Foundation validation runtime checks and Swift parse pass; native WebKit lifecycle unverified
+2026-09-26T19:19:22+00:00	fact	capture.limits	12000-source-4000-selection	backend	DATA	UTF-16 units bounded before bridge; exact URL and verbatim quote match required; remote pages never receive the bundled lesson
+2026-09-26T19:19:22+00:00	fact	capture.native-check	required-on-teammate-mac	backend	DATA	Verify selection survives pet and Explore taps; no passive selection cache; test navigation stale completions and timeout in WebKit; no Xcode locally
+2026-09-26T19:22:47+00:00	item	starter-ui	review	frontend	SCREEN	Citation follow-up on disk: bundled source returns to reader; remote source opens actual URL; pending commit and re-parse because git/swiftc processes hang; native SCREEN remains unverified
+2026-09-26T19:24:53+00:00	item	page-context	review	verifier	DATA	PASS 15 Foundation context regressions; WebKit navigation, stale callbacks and timeout recovery require native evidence; no Xcode available
+2026-09-26T19:25:32+00:00	item	starter-ui	review	frontend	SCREEN	Citation actions committed f6c6fe5; local returns to preserved reader and remote opens exact source; parse passes; native SCREEN unverified
+2026-09-26T19:25:32+00:00	item	pet-assets	review	frontend	SCREEN	Native companion animation committed 4ce8186; asset CompanionPet with face fallback; idle bob/tilt, capture pulse, single ready bounce; reduced-motion and inactive scene pause; parse passes both flags; main supplies asset/project entry; native SCREEN unverified
+2026-09-26T19:31:15+00:00	item	handoff-01	review	main	INIT	Source integration, generated pet, docs sync and teammate handoff; verify portable checks before draft branch push

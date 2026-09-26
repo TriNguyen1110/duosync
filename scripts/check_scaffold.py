@@ -30,9 +30,10 @@ for phase_id in target["buildPhases"]:
         reference = objects[objects[build_id]["fileRef"]]
         name = reference["path"]
         location = root / "DuoSync" / ("Resources" if name.endswith(".html") else "") / name
-        assert location.is_file(), f"Unresolved build resource: {name}"
+        assert (location.is_dir() if name.endswith(".xcassets") else location.is_file()), f"Unresolved build resource: {name}"
         referenced.add(name)
-assert referenced == {"DuoSyncApp.swift", "BrowserView.swift", "ContentView.swift", "Reading.html"}
+assert referenced == {"DuoSyncApp.swift", "BrowserView.swift", "ContentView.swift", "Reading.html",
+                      "Models.swift", "PendulumView.swift", "DuoLayout.swift", "CompanionPet.swift", "Assets.xcassets"}
 scheme = ET.parse(root / "DuoSync.xcodeproj/xcshareddata/xcschemes/DuoSync.xcscheme")
 for reference in scheme.findall(".//BuildableReference"):
     assert reference.attrib["BlueprintIdentifier"] == target_ids[0]
