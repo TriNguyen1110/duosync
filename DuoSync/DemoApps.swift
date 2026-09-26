@@ -160,8 +160,9 @@ struct DemoAppsView: View {
         .background(Color(.systemBackground))
     }
 
-    private let financePurple = Color(red: 0.40, green: 0.19, blue: 0.72)
+    private let financePurple = Color(red: 100.0 / 255, green: 52.0 / 255, blue: 191.0 / 255)
     private let financeInk = Color(red: 0.17, green: 0.16, blue: 0.18)
+    private let financeSecondary = Color(red: 102.0 / 255, green: 106.0 / 255, blue: 97.0 / 255)
     private let financePaper = Color(red: 0.98, green: 0.97, blue: 0.94)
 
     private var finance: some View {
@@ -170,34 +171,34 @@ struct DemoAppsView: View {
                 Text("finance").font(.system(.title2, design: .rounded, weight: .black))
                     .foregroundStyle(financePurple)
                 Text("DEMO").font(.system(size: 8, weight: .bold)).tracking(1)
-                    .padding(5).background(financePurple.opacity(0.09), in: Capsule())
+                    .padding(8).background(financePurple.opacity(0.09), in: Capsule())
                 Spacer()
                 Image(systemName: "magnifyingglass").foregroundStyle(financeInk)
-            }.padding(18)
+            }.padding(16)
             Divider()
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 28) {
-                    VStack(alignment: .leading, spacing: 20) {
+                LazyVStack(alignment: .leading, spacing: 32) {
+                    VStack(alignment: .leading, spacing: 24) {
                         HStack {
                             Text("GOOGL").font(.caption.weight(.bold)).tracking(1)
                             Spacer()
                             Text("ANNUAL RESULTS").font(.system(size: 9, weight: .bold)).tracking(1.4)
                                 .foregroundStyle(financePurple)
                         }
-                        Text("Alphabet Inc.").font(.system(.largeTitle, design: .serif, weight: .semibold))
-                        Text("A stronger year.\nA bigger infrastructure bill.")
-                            .font(.system(.title2, design: .serif)).lineSpacing(3)
+                        Text("Alphabet Inc.").font(.subheadline.weight(.semibold)).foregroundStyle(financeSecondary)
+                        Text("A bigger year.\nA bigger investment.")
+                            .font(.system(.largeTitle, design: .serif, weight: .semibold)).lineSpacing(8)
                         Text("FY2024 · Year ended Dec 31, 2024")
-                            .font(.caption).foregroundStyle(financeInk.opacity(0.6))
+                            .font(.caption).foregroundStyle(financeSecondary)
                         VStack(alignment: .leading, spacing: 8) {
                             Text("ANNUAL REVENUE").font(.system(size: 10, weight: .bold)).tracking(1.5)
-                            Text("$350.018B").font(.system(size: 39, weight: .semibold, design: .rounded))
+                            Text("$350.018B").font(.system(size: 40, weight: .semibold, design: .rounded))
                                 .minimumScaleFactor(0.7).lineLimit(1)
-                            Text("2023: $307.394B").font(.subheadline).foregroundStyle(financeInk.opacity(0.65))
+                            Text("2023: $307.394B").font(.subheadline).foregroundStyle(financeSecondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(20).background(.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 20))
-                        VStack(spacing: 15) {
+                        .padding(24).background(.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 24))
+                        VStack(spacing: 16) {
                             financeRow("Operating income", current: "$112.390B", previous: "$84.293B")
                             Divider()
                             financeRow("Operating margin", current: "32%", previous: "27%")
@@ -205,9 +206,9 @@ struct DemoAppsView: View {
                             financeRow("Diluted EPS", current: "$8.04", previous: "$5.80")
                         }
                         Text("2024 figures shown first; comparisons are FY2023. Historical filing data, not a live market quote.")
-                            .font(.caption2).foregroundStyle(financeInk.opacity(0.6))
+                            .font(.caption2).foregroundStyle(financeSecondary)
                     }.id(0)
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 16) {
                         Text("Where the spending grew")
                             .font(.system(.title2, design: .serif, weight: .semibold))
                         HStack(alignment: .firstTextBaseline) {
@@ -219,18 +220,20 @@ struct DemoAppsView: View {
                         capexBar(year: "2023", value: 32.3, emphasized: false)
                         capexBar(year: "2024", value: 52.5, emphasized: true)
                         Text("USD billions · Change calculated from rounded reported amounts")
-                            .font(.caption2).foregroundStyle(financeInk.opacity(0.6))
+                            .font(.caption2).foregroundStyle(financeSecondary)
                         Text("Capex primarily reflected technical infrastructure. It is not an AI-only spending total.")
-                            .font(.subheadline).lineSpacing(4)
+                            .font(.subheadline).lineSpacing(8)
                         Link(destination: URL(string: DemoContent.financeSource)!) {
                             Label("Source: Alphabet 2024 Form 10-K", systemImage: "arrow.up.right.square")
                                 .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                .contentShape(Rectangle())
                         }.foregroundStyle(financePurple)
                         Text("Historical company results for explanation and comparison. No live price feed is connected.")
-                            .font(.caption2).foregroundStyle(financeInk.opacity(0.6))
+                            .font(.caption2).foregroundStyle(financeSecondary)
                     }.id(1)
                 }
-                .scrollTargetLayout().padding(22).padding(.bottom, 90)
+                .scrollTargetLayout().padding(24).padding(.bottom, 96)
             }
             .scrollPosition(id: $visibleFinance, anchor: .top)
             .onChange(of: visibleFinance) { _, index in
@@ -245,9 +248,9 @@ struct DemoAppsView: View {
         HStack(alignment: .firstTextBaseline) {
             Text(title).font(.subheadline)
             Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .trailing, spacing: 8) {
                 Text(current).font(.subheadline.weight(.semibold))
-                Text("vs " + previous).font(.caption2).foregroundStyle(financeInk.opacity(0.55))
+                Text("vs " + previous).font(.caption2).foregroundStyle(financeSecondary)
             }
         }
     }
@@ -260,7 +263,7 @@ struct DemoAppsView: View {
                 Text("$" + String(format: "%.1f", value) + "B").fontWeight(.semibold)
             }.font(.caption)
             GeometryReader { geometry in
-                RoundedRectangle(cornerRadius: 5)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(financePurple.opacity(emphasized ? 1 : 0.28))
                     .frame(width: geometry.size.width * value / 52.5)
             }.frame(height: 24)
