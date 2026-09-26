@@ -1,6 +1,14 @@
 import SwiftUI
 import UIKit
 
+private enum DuoPresentation {
+    static let ivory = Color(red: 245.0 / 255, green: 243.0 / 255, blue: 235.0 / 255)
+    static let charcoal = Color(red: 46.0 / 255, green: 51.0 / 255, blue: 47.0 / 255)
+    static let muted = Color(red: 102.0 / 255, green: 106.0 / 255, blue: 97.0 / 255)
+    static let orange = Color(red: 183.0 / 255, green: 68.0 / 255, blue: 37.0 / 255)
+    static let border = Color(red: 226.0 / 255, green: 224.0 / 255, blue: 215.0 / 255)
+}
+
 private enum ContextSource: Equatable { case demo, screen, browser }
 private let quickCheckPrompt = "Check the current post/article in 2–3 short sentences: assess the claim, give the strongest reason, and one thing to verify. For AI-generated media, do not claim certainty or a probability from caption/illustration alone."
 
@@ -50,9 +58,10 @@ struct ContentView: View {
                 }
                 companion(in: geometry.size)
             }
-            .background(Color(.systemBackground))
+            .background(DuoPresentation.ivory)
         }
-        .tint(Color(red: 0.10, green: 0.49, blue: 0.36))
+        .foregroundStyle(DuoPresentation.charcoal)
+        .tint(DuoPresentation.orange)
         .onChange(of: contextSource) { _, newValue in
             if newValue != .screen { screens.stopCapture() }
             browser.clearConversation()
@@ -78,16 +87,16 @@ struct ContentView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("duosync").font(.system(.title2, design: .rounded, weight: .bold))
-                    Text("A little help. A deeper understanding.")
-                        .font(.caption).foregroundStyle(.secondary)
+                    Text("A little more perspective.")
+                        .font(.caption).foregroundStyle(DuoPresentation.muted)
                 }
                 Spacer(minLength: 8)
                 if demoMode {
-                    Text("Demo").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                    Text("Demo").font(.caption.weight(.medium)).foregroundStyle(DuoPresentation.muted)
                 }
                 Menu {
                     Button("Demo apps") { contextSource = .demo }
@@ -100,8 +109,8 @@ struct ContentView: View {
                 }
                 .accessibilityLabel("Choose context source")
             }
-            if !screenMode && !demoMode { HStack(spacing: 10) {
-                Image(systemName: "globe").foregroundStyle(.secondary)
+            if !screenMode && !demoMode { HStack(spacing: 8) {
+                Image(systemName: "globe").foregroundStyle(DuoPresentation.muted)
                 TextField("Read here, or enter a URL", text: $browser.address)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
@@ -115,14 +124,16 @@ struct ContentView: View {
                 .accessibilityLabel("Open web address")
             }
             .padding(12)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+            .background(DuoPresentation.ivory, in: RoundedRectangle(cornerRadius: 16))
             }
             if !screenMode && !demoMode, let error = browser.errorMessage, !workspaceOpen {
                 Text(error).font(.caption).foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(.horizontal, 18).padding(.top, 10).padding(.bottom, 12)
+        .padding(.horizontal, 24).padding(.vertical, 16)
+        .background(DuoPresentation.ivory)
+        .overlay(alignment: .bottom) { Rectangle().fill(DuoPresentation.border).frame(height: 1) }
     }
 
     private func toggleWorkspace() {
@@ -195,7 +206,7 @@ struct ContentView: View {
                     }
                     .frame(width: max(0, min(190, size.width - 50)), alignment: .leading)
                     .padding(13)
-                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+                        .background(DuoPresentation.ivory, in: RoundedRectangle(cornerRadius: 18))
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.accentColor.opacity(0.22)))
                         .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
                 }
@@ -244,6 +255,7 @@ struct AssistantWorkspace: View {
     @Binding var selectedSpecies: String
     @Binding var draft: String
     @Binding var lastSubmitted: String
+    @FocusState private var composerFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let close: () -> Void
     let clearSession: () -> Void
@@ -266,8 +278,9 @@ struct AssistantWorkspace: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Label("\(species.title) companion", systemImage: "sparkles")
-                    .font(.headline)
+                Text("YOUR WORKSPACE")
+                    .font(.caption.weight(.semibold)).tracking(2)
+                    .foregroundStyle(DuoPresentation.muted)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Spacer()
@@ -309,28 +322,43 @@ struct AssistantWorkspace: View {
                 }
                 .accessibilityLabel("Close assistant workspace")
             }
-            .padding(.horizontal, 20).padding(.top, 8)
+            .padding(.horizontal, 24).padding(.vertical, 8)
+            Rectangle().fill(DuoPresentation.border).frame(height: 1)
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 18) {
-                        if browser.messages.isEmpty {
-                            Text("Keep the thought going.")
-                                .font(.system(.title2, design: .rounded, weight: .bold))
-                            Text(demoMode ? "Ask about what’s on screen, or something you saw a moment ago. Your recent apps come along automatically." : screenMode ? "Use Safari or another app alongside DuoSync. Once you start screen sharing, ask about the current and recent remembered screens — no selection needed." : "Select a passage in the reader, then ask a question. This conversation stays here when you close the workspace.")
-                                .font(.subheadline).foregroundStyle(.secondary)
-                        }
+                    VStack(alignment: .leading, spacing: 24) {
                         if demoMode {
-                            DisclosureGroup("Current app + \(max(0, demoStore.recentContexts.count - 1)) recent") {
+                            DisclosureGroup {
                                 ForEach(demoStore.recentContexts, id: \.documentID) { context in
-                                    VStack(alignment: .leading, spacing: 6) {
+                                    VStack(alignment: .leading, spacing: 8) {
                                         Text(context.title).font(.caption.weight(.semibold))
                                         Text(context.selection).font(.caption).lineLimit(4)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(DuoPresentation.muted)
                                     }
-                                    .padding(.vertical, 5)
+                                    .padding(.vertical, 8)
                                 }
+                            } label: {
+                                HStack(alignment: .center, spacing: 16) {
+                                    Image(systemName: "doc.text")
+                                        .font(.title2).foregroundStyle(DuoPresentation.muted)
+                                        .frame(width: 40, height: 56)
+                                        .background(DuoPresentation.ivory, in: RoundedRectangle(cornerRadius: 8))
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("PAGE CONTEXT").font(.caption2.weight(.semibold)).tracking(1.5)
+                                            .foregroundStyle(DuoPresentation.muted)
+                                        Text(demoStore.recentContexts.first?.title ?? "Your current app")
+                                            .font(.subheadline.weight(.medium)).lineLimit(2)
+                                            .foregroundStyle(DuoPresentation.charcoal)
+                                        Text("Current app + \(max(0, demoStore.recentContexts.count - 1)) recent")
+                                            .font(.caption).foregroundStyle(DuoPresentation.muted)
+                                    }
+                                }
+                                .frame(minHeight: 64)
                             }
                             .font(.caption)
+                            .padding(16)
+                            .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(DuoPresentation.border, lineWidth: 1))
                         }
                         if screenMode {
                             DisclosureGroup("Screen context · \(screens.snapshots.count) of 5 remembered") {
@@ -348,21 +376,36 @@ struct AssistantWorkspace: View {
                             }
                             .font(.caption)
                         }
+                        if browser.messages.isEmpty {
+                            VStack(alignment: .leading, spacing: 24) {
+                                Image(systemName: "sparkle")
+                                    .font(.system(size: 32, weight: .light))
+                                    .foregroundStyle(DuoPresentation.orange)
+                                Text("Stay in your flow.\nI’ll take the next step.")
+                                    .font(.system(.largeTitle, design: .serif, weight: .regular))
+                                    .tracking(-0.8)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(demoMode ? "Browse freely. Your page and recent apps follow you here, so you can keep the thought going." : screenMode ? "Start sharing, then ask about what you’ve seen. Your recent screens stay close." : "Browse a page and select a passage. Your conversation stays here when you return.")
+                                    .font(.body).foregroundStyle(DuoPresentation.muted)
+                            }
+                            .padding(.vertical, 24)
+                        }
                         ForEach(browser.messages) { message in
                             VStack(alignment: .leading, spacing: 7) {
                                 Text(message.role == "user" ? "YOU" : "DUOSYNC")
-                                    .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                                    .font(.caption2.weight(.bold)).foregroundStyle(DuoPresentation.muted)
                                 Text(message.content == quickCheckPrompt ? "Check this" : message.content).font(.body).textSelection(.enabled)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(16)
-                            .background(message.role == "user" ? Color.accentColor.opacity(0.08) : Color(.systemBackground), in: RoundedRectangle(cornerRadius: 18))
+                            .background(message.role == "user" ? DuoPresentation.orange.opacity(0.06) : Color.white, in: RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(DuoPresentation.border, lineWidth: 1))
                         }
                         if browser.isResponding {
                             ProgressView(browser.isCapturing ? "Reading your selected passage…" : "Waiting for your assistant…")
                                 .font(.subheadline)
                             Text("You can close this workspace and keep reading.")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(DuoPresentation.muted)
                         }
                         if let error = browser.chatError {
                             VStack(alignment: .leading, spacing: 9) {
@@ -370,6 +413,7 @@ struct AssistantWorkspace: View {
                                     .font(.subheadline).foregroundStyle(.red)
                                 if !lastSubmitted.isEmpty {
                                     Button("Retry last question") { send(lastSubmitted) }
+                                        .buttonStyle(.bordered).controlSize(.large).frame(minHeight: 44)
                                         .disabled(browser.isResponding || (automaticContext && screenContext == nil))
                                 }
                             }
@@ -378,7 +422,7 @@ struct AssistantWorkspace: View {
                             DisclosureGroup("Try the offline pendulum lesson") {
                                 VStack(alignment: .leading, spacing: 14) {
                                     Text("Bundled demo · prewritten lesson, separate from live chat")
-                                        .font(.caption).foregroundStyle(.secondary)
+                                        .font(.caption).foregroundStyle(DuoPresentation.muted)
                                     Button("Explore selected demo passage", action: browser.exploreSelection)
                                         .disabled(browser.isCapturing)
                                     if let error = browser.errorMessage { Text(error).font(.caption).foregroundStyle(.red) }
@@ -393,12 +437,12 @@ struct AssistantWorkspace: View {
                         }
                         Color.clear.frame(height: 1).id("conversation-bottom")
                     }
-                    .padding(20)
+                    .padding(24)
                 }
                 .onChange(of: browser.messages.count) { _, _ in proxy.scrollTo("conversation-bottom", anchor: .bottom) }
                 .onChange(of: browser.chatError) { _, _ in proxy.scrollTo("conversation-bottom", anchor: .bottom) }
             }
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 16) {
                 if demoMode {
                     Button("Check this", systemImage: "checkmark.shield") {
                         guard screenContext != nil else { return }
@@ -406,20 +450,23 @@ struct AssistantWorkspace: View {
                         send(quickCheckPrompt)
                     }
                     .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.bordered).controlSize(.large)
+                    .frame(minHeight: 44)
                     .disabled(browser.isResponding || screenContext == nil)
                 }
                 TextField(demoMode ? "Ask about this, or something you just saw…" : screenMode ? "Ask about your recent screens…" : "Ask about your selected passage…", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
-                    .padding(12)
-                    .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+                    .focused($composerFocused)
+                    .frame(minHeight: 44)
+                    .padding(8)
                     .accessibilityLabel("Message your assistant")
                 HStack {
                     Text(demoMode ? "Current app + recent context" : screenMode ? (screenContext == nil ? "Start sharing to add screen context" : "Recent \(screens.snapshots.count) screens attach on Send") : (browser.context == nil ? "Selection attaches on first send" : "Using the attached passage"))
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(.caption2).foregroundStyle(DuoPresentation.muted)
                     Spacer()
                     if browser.isResponding {
                         Button("Stop", systemImage: "stop.fill", action: browser.cancelResponse)
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.bordered).controlSize(.large).frame(minHeight: 44)
                     } else {
                         Button("Send", systemImage: "arrow.up") {
                             let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -430,34 +477,41 @@ struct AssistantWorkspace: View {
                             draft = ""
                         }
                         .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .frame(minHeight: 44)
                         .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.utf16.count > 4000 || browser.isCapturing || (automaticContext && screenContext == nil))
                     }
                 }
                 if draft.utf16.count > 4000 { Text("This message is too long. Shorten it to send.").font(.caption).foregroundStyle(.red) }
             }
-            .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 80)
-            .background(.regularMaterial)
+            .padding(16)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 24))
+            .overlay(RoundedRectangle(cornerRadius: 24)
+                .stroke(composerFocused ? DuoPresentation.orange : DuoPresentation.border, lineWidth: composerFocused ? 2 : 1))
+            .padding(16).padding(.bottom, 72)
+            .background(DuoPresentation.ivory)
 
         }
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 26))
+        .background(DuoPresentation.ivory, in: RoundedRectangle(cornerRadius: 24))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(DuoPresentation.border, lineWidth: 1))
     }
 
     private func sourceCard(title: String, url: URL, quote: String) -> some View {
         VStack(alignment: .leading, spacing: 9) {
             Label(demoMode ? "From your recent apps" : screenMode ? "Recognized screen text · may contain errors" : "From your reading", systemImage: automaticContext ? "rectangle.on.rectangle" : "text.quote")
-                .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                .font(.caption.weight(.semibold)).foregroundStyle(DuoPresentation.muted)
             Text(title).font(.subheadline.weight(.semibold))
             if demoMode {
-                Text("Demo content").font(.caption2).foregroundStyle(.secondary)
+                Text("Demo content").font(.caption2).foregroundStyle(DuoPresentation.muted)
             } else if screenMode {
                 Text("From user-shared screens. No app identity or page URL was inferred.")
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(.caption2).foregroundStyle(DuoPresentation.muted)
             } else if url.isFileURL {
                 Button(action: close) {
                     Label("Return to bundled reading", systemImage: "book")
                 }
                 .font(.caption.weight(.semibold))
-                Text(url.absoluteString).font(.caption2).foregroundStyle(.secondary)
+                Text(url.absoluteString).font(.caption2).foregroundStyle(DuoPresentation.muted)
                     .textSelection(.enabled)
             } else {
                 Link(destination: url) {
@@ -470,7 +524,8 @@ struct AssistantWorkspace: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(DuoPresentation.border, lineWidth: 1))
     }
 }
 
@@ -492,19 +547,19 @@ private struct ScreenContextSurface: View {
                 Text("Your apps.\nOne conversation.")
                     .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 Text("Start screen sharing, then use Safari, social apps, or anything else you’re exploring. Return here — or place DuoSync beside another app — to ask about what you’ve seen.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(DuoPresentation.muted)
                 ScreenContextControls(screens: screens, clearSession: clearSession)
                 Button("Open assistant", systemImage: "bubble.left.and.bubble.right", action: openAssistant)
                     .buttonStyle(.borderedProminent)
                 ScreenHistory(screens: screens)
                 Text("Only recognized text from the latest five distinct screens is remembered here. Screen text is sent to your configured assistant when you send a question. The companion appears inside DuoSync.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(DuoPresentation.muted)
             }
             .frame(maxWidth: 650, alignment: .leading)
             .padding(24).padding(.bottom, 160)
         }
         .frame(maxWidth: .infinity)
-        .background(Color(.secondarySystemBackground))
+        .background(DuoPresentation.ivory)
     }
 }
 
@@ -548,15 +603,15 @@ private struct ScreenContextControls: View {
                 }
             } else {
                 Text("Screen sharing requires a supported iOS 27 build. You can use Browser fallback on this device.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(DuoPresentation.muted)
             }
             if !screens.snapshots.isEmpty {
                 Button("Clear screens & conversation", role: .destructive, action: clearSession)
                     .font(.caption)
                 Text(screens.isCapturing ? "Sharing is running; new screen text can appear after clearing." : "Sharing is paused or stopped. These remembered screens remain until cleared.")
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(.caption2).foregroundStyle(DuoPresentation.muted)
                 Text("Clear removes recent screen text, this conversation, and your draft from DuoSync. It cannot recall information already sent to the assistant server.")
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(.caption2).foregroundStyle(DuoPresentation.muted)
             }
         }
         .padding(.vertical, 8)
@@ -571,7 +626,7 @@ private struct ScreenHistory: View {
             Text("Recent shared screens").font(.headline)
             if screens.snapshots.isEmpty {
                 Text("No readable screen text yet. Nothing is attached to a question until a real screen is received.")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(DuoPresentation.muted)
             }
             ForEach(Array(screens.snapshots.enumerated()), id: \.element.id) { index, snapshot in
                 VStack(alignment: .leading, spacing: 8) {
@@ -579,13 +634,13 @@ private struct ScreenHistory: View {
                         Text(index == 0 ? "Latest remembered screen" : "Earlier screen")
                             .font(.caption.weight(.semibold))
                         Spacer()
-                        Text(snapshot.capturedAt, style: .time).font(.caption2).foregroundStyle(.secondary)
+                        Text(snapshot.capturedAt, style: .time).font(.caption2).foregroundStyle(DuoPresentation.muted)
                     }
                     Text(snapshot.text).font(.caption).lineLimit(5).textSelection(.enabled)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
-                .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16))
+                .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
             }
         }
     }
