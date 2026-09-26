@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 private enum ContextSource: Equatable { case demo, screen, browser }
-private let quickCheckPrompt = "Check the current post/article for unsupported or misleading claims. Separate evidence from inference, explain red flags, and say what needs verification. For AI-generated media, do not claim certainty or a probability from caption/illustration alone."
+private let quickCheckPrompt = "Check the current post/article in 2–3 short sentences: assess the claim, give the strongest reason, and one thing to verify. For AI-generated media, do not claim certainty or a probability from caption/illustration alone."
 
 struct ContentView: View {
     @StateObject private var browser = BrowserStore()
