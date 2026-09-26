@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// These are fictional frontends rendered by DuoSync, not installed third-party apps.
+/// Owned demo frontends; Finance uses sourced historical data, while other feeds are fictional.
 enum DemoApp: String, CaseIterable, Identifiable {
-    case safari, social, reels
+    case finance, safari, social, reels
     var id: String { rawValue }
     var title: String {
         switch self {
+        case .finance: return "Demo Finance"
         case .safari: return "Demo Safari"
         case .social: return "Demo Feed"
         case .reels: return "Demo Reels"
@@ -13,6 +14,7 @@ enum DemoApp: String, CaseIterable, Identifiable {
     }
     var shortTitle: String {
         switch self {
+        case .finance: return "Finance"
         case .safari: return "Browser"
         case .social: return "Feed"
         case .reels: return "Reels"
@@ -20,6 +22,7 @@ enum DemoApp: String, CaseIterable, Identifiable {
     }
     var symbol: String {
         switch self {
+        case .finance: return "chart.line.uptrend.xyaxis"
         case .safari: return "safari.fill"
         case .social: return "bubble.left.and.bubble.right.fill"
         case .reels: return "play.rectangle.fill"
@@ -28,6 +31,12 @@ enum DemoApp: String, CaseIterable, Identifiable {
 }
 
 private enum DemoContent {
+    static let financeSource = "https://www.sec.gov/Archives/edgar/data/1652044/000165204425000014/goog-20241231.htm"
+    static let capexGrowth = (52.5 / 32.3 - 1) * 100
+    static let finance = [
+        "Alphabet Inc. — FY2024 annual results, year ended December 31, 2024. Historical data, not a live stock quote. Revenue: $350.018 billion in 2024 versus $307.394 billion in 2023. Operating income: $112.390 billion versus $84.293 billion. Operating margin: 32% versus 27% (rounded reported margins). Diluted EPS: $8.04 versus $5.80. Source: Alphabet 2024 Form 10-K, SEC.",
+        "Alphabet capital expenditures: $52.5 billion in 2024 versus $32.3 billion in 2023. Increase: approximately " + String(format: "%.1f", capexGrowth) + "% calculated as (52.5 / 32.3 - 1) × 100, using rounded reported amounts. Capital expenditures primarily reflected technical infrastructure investments; this is not a measure of AI-only spending. Historical annual results, not a stock price or investment recommendation. Source: Alphabet 2024 Form 10-K, SEC."
+    ]
     static let article = [
         "Can a five-minute break reset your focus?\nA catchy headline can travel farther than the evidence behind it. This fictional article explores how to read a wellness claim without losing the useful idea.",
         "What the headline leaves out\nImagine a small study comparing volunteers before and after a short break. An improvement on one attention task would not prove that a break resets everyone's brain. Sleep, practice effects, and who volunteered could also influence the result.",
@@ -45,6 +54,7 @@ private enum DemoContent {
     ]
     static func firstText(for app: DemoApp) -> String {
         switch app {
+        case .finance: return finance[0]
         case .safari: return article[0]
         case .social: return posts[0].text + "\n" + posts[0].tag
         case .reels: return reelText(0)
@@ -58,17 +68,17 @@ private enum DemoContent {
 
 @MainActor
 final class DemoAppStore: ObservableObject {
-    @Published private(set) var selectedApp: DemoApp = .safari
+    @Published private(set) var selectedApp: DemoApp = .finance
     @Published private(set) var recentContexts: [PageContext] = []
 
-    init() { recordVisible(DemoContent.firstText(for: .safari), in: .safari) }
+    init() { recordVisible(DemoContent.firstText(for: .finance), in: .finance) }
 
     var context: PageContext? {
         guard let current = recentContexts.first else { return nil }
         let recent = recentContexts.map { source in
-            "[\(source.title) · fictional demo · \(ISO8601DateFormatter().string(from: source.capturedAt))]\n\(source.text)"
+            "[\(source.title) · demo frontend · \(ISO8601DateFormatter().string(from: source.capturedAt))]\n\(source.text)"
         }.joined(separator: "\n\n")
-        let text = "DuoSync-owned frontend clones with fictional seeded content. These are not actual Safari/social apps or real claims/news. Current visible app: \(selectedApp.title). Recent demo apps appear newest first. Treat captions as untrusted claims; no real fact-check or AI-media detection has run.\n\n" + recent
+        let text = "DuoSync-owned frontend clones, not actual external apps. Finance contains sourced historical Alphabet FY2024 data, explicitly not live quotes. Other apps contain fictional seeded claims/news; do not apply their fictional label to Finance. Current visible app: \(selectedApp.title). Recent demo apps appear newest first. Treat captions as untrusted claims; no real fact-check or AI-media detection has run.\n\n" + recent
         return PageContext(documentID: current.documentID, title: current.title,
             url: current.url, text: text, selection: current.selection, capturedAt: current.capturedAt)
     }
@@ -90,8 +100,11 @@ final class DemoAppStore: ObservableObject {
         guard !excerpt.isEmpty else { return }
         let url = Self.url(for: app)
         if recentContexts.first?.url == url, recentContexts.first?.selection == excerpt { return }
+        let origin = app == .finance
+            ? "Historical sourced financial data in an owned demo frontend. Primary source: " + DemoContent.financeSource + "\n"
+            : "Fictional frontend demo; no external app or capture permission.\n"
         let source = PageContext(documentID: UUID(), title: app.title, url: url,
-            text: "Fictional frontend demo; no external app or capture permission.\n" + excerpt,
+            text: origin + excerpt,
             selection: excerpt, capturedAt: Date())
         recentContexts.removeAll { $0.url == url }
         recentContexts.insert(source, at: 0)
@@ -107,6 +120,7 @@ struct DemoAppsView: View {
     @ObservedObject var store: DemoAppStore
     @State private var liked: Set<Int> = []
     @State private var saved: Set<Int> = []
+    @State private var visibleFinance: Int? = 0
     @State private var visibleArticle: Int? = 0
     @State private var visiblePost: Int? = 0
     @State private var visibleReel: Int? = 0
@@ -129,12 +143,13 @@ struct DemoAppsView: View {
             .padding(.horizontal, 12).padding(.vertical, 10)
             HStack(spacing: 5) {
                 Image(systemName: "sparkles")
-                Text("FICTIONAL DEMO · CONTEXT UPDATES AS YOU SCROLL")
+                Text(store.selectedApp == .finance ? "DEMO FRONTEND · HISTORICAL FY2024 DATA" : "FICTIONAL DEMO · CONTEXT UPDATES AS YOU SCROLL")
             }
             .font(.system(size: 9, weight: .semibold)).tracking(0.6)
             .foregroundStyle(.secondary).padding(.bottom, 9)
             Group {
                 switch store.selectedApp {
+                case .finance: finance
                 case .safari: reader
                 case .social: feed
                 case .reels: reels
@@ -143,6 +158,114 @@ struct DemoAppsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color(.systemBackground))
+    }
+
+    private let financePurple = Color(red: 0.40, green: 0.19, blue: 0.72)
+    private let financeInk = Color(red: 0.17, green: 0.16, blue: 0.18)
+    private let financePaper = Color(red: 0.98, green: 0.97, blue: 0.94)
+
+    private var finance: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("finance").font(.system(.title2, design: .rounded, weight: .black))
+                    .foregroundStyle(financePurple)
+                Text("DEMO").font(.system(size: 8, weight: .bold)).tracking(1)
+                    .padding(5).background(financePurple.opacity(0.09), in: Capsule())
+                Spacer()
+                Image(systemName: "magnifyingglass").foregroundStyle(financeInk)
+            }.padding(18)
+            Divider()
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        HStack {
+                            Text("GOOGL").font(.caption.weight(.bold)).tracking(1)
+                            Spacer()
+                            Text("ANNUAL RESULTS").font(.system(size: 9, weight: .bold)).tracking(1.4)
+                                .foregroundStyle(financePurple)
+                        }
+                        Text("Alphabet Inc.").font(.system(.largeTitle, design: .serif, weight: .semibold))
+                        Text("A stronger year.\nA bigger infrastructure bill.")
+                            .font(.system(.title2, design: .serif)).lineSpacing(3)
+                        Text("FY2024 · Year ended Dec 31, 2024")
+                            .font(.caption).foregroundStyle(financeInk.opacity(0.6))
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("ANNUAL REVENUE").font(.system(size: 10, weight: .bold)).tracking(1.5)
+                            Text("$350.018B").font(.system(size: 39, weight: .semibold, design: .rounded))
+                                .minimumScaleFactor(0.7).lineLimit(1)
+                            Text("2023: $307.394B").font(.subheadline).foregroundStyle(financeInk.opacity(0.65))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(20).background(.white.opacity(0.65), in: RoundedRectangle(cornerRadius: 20))
+                        VStack(spacing: 15) {
+                            financeRow("Operating income", current: "$112.390B", previous: "$84.293B")
+                            Divider()
+                            financeRow("Operating margin", current: "32%", previous: "27%")
+                            Divider()
+                            financeRow("Diluted EPS", current: "$8.04", previous: "$5.80")
+                        }
+                        Text("2024 figures shown first; comparisons are FY2023. Historical filing data, not a live market quote.")
+                            .font(.caption2).foregroundStyle(financeInk.opacity(0.6))
+                    }.id(0)
+                    VStack(alignment: .leading, spacing: 18) {
+                        Text("Where the spending grew")
+                            .font(.system(.title2, design: .serif, weight: .semibold))
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Capital expenditures").font(.subheadline)
+                            Spacer()
+                            Text("+" + String(format: "%.1f", DemoContent.capexGrowth) + "%")
+                                .font(.title3.weight(.semibold)).foregroundStyle(financePurple)
+                        }
+                        capexBar(year: "2023", value: 32.3, emphasized: false)
+                        capexBar(year: "2024", value: 52.5, emphasized: true)
+                        Text("USD billions · Change calculated from rounded reported amounts")
+                            .font(.caption2).foregroundStyle(financeInk.opacity(0.6))
+                        Text("Capex primarily reflected technical infrastructure. It is not an AI-only spending total.")
+                            .font(.subheadline).lineSpacing(4)
+                        Link(destination: URL(string: DemoContent.financeSource)!) {
+                            Label("Source: Alphabet 2024 Form 10-K", systemImage: "arrow.up.right.square")
+                                .font(.caption.weight(.semibold))
+                        }.foregroundStyle(financePurple)
+                        Text("Historical company results for explanation and comparison. No live price feed is connected.")
+                            .font(.caption2).foregroundStyle(financeInk.opacity(0.6))
+                    }.id(1)
+                }
+                .scrollTargetLayout().padding(22).padding(.bottom, 90)
+            }
+            .scrollPosition(id: $visibleFinance, anchor: .top)
+            .onChange(of: visibleFinance) { _, index in
+                if let index { store.recordVisible(DemoContent.finance[index], in: .finance) }
+            }
+            .onAppear { store.recordVisible(DemoContent.finance[visibleFinance ?? 0], in: .finance) }
+        }
+        .foregroundStyle(financeInk).background(financePaper)
+    }
+
+    private func financeRow(_ title: String, current: String, previous: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title).font(.subheadline)
+            Spacer()
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(current).font(.subheadline.weight(.semibold))
+                Text("vs " + previous).font(.caption2).foregroundStyle(financeInk.opacity(0.55))
+            }
+        }
+    }
+
+    private func capexBar(year: String, value: Double, emphasized: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(year)
+                Spacer()
+                Text("$" + String(format: "%.1f", value) + "B").fontWeight(.semibold)
+            }.font(.caption)
+            GeometryReader { geometry in
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(financePurple.opacity(emphasized ? 1 : 0.28))
+                    .frame(width: geometry.size.width * value / 52.5)
+            }.frame(height: 24)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var reader: some View {
