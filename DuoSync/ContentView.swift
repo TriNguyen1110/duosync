@@ -4,6 +4,8 @@ import UIKit
 struct ContentView: View {
     @StateObject private var browser = BrowserStore()
     @State private var workspaceOpen = false
+    @State private var draft = ""
+    @State private var lastSubmitted = ""
     @State private var petPosition: CGPoint?
     @State private var bubbleSize = CGSize(width: 216, height: 110)
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -21,6 +23,7 @@ struct ContentView: View {
                         BrowserView(store: browser)
                     } workspace: {
                         AssistantWorkspace(browser: browser, selectedSpecies: $selectedSpecies,
+                                           draft: $draft, lastSubmitted: $lastSubmitted,
                                            close: toggleWorkspace)
                     }
                 }
@@ -81,9 +84,11 @@ struct ContentView: View {
 
     private var companionMessage: String {
         if browser.isCapturing { return "One tiny moment. Reading your selection…" }
-        if browser.errorMessage != nil { return "A little plot twist. Tap me to take a look." }
-        if browser.explanation != nil { return "Aha! Your little lesson is ready." }
-        if browser.context != nil { return "Quote captured. Live explanations aren’t connected yet." }
+        if browser.isResponding { return "Working on your question. Keep reading — I’m here." }
+        if browser.chatError != nil || browser.errorMessage != nil { return "A little plot twist. Tap me to take a look." }
+        if browser.messages.last?.role == "assistant" { return "Aha! Your reply is ready. Want to keep going?" }
+        if browser.explanation != nil { return "Your bundled lesson is ready." }
+        if browser.context != nil { return "Your passage is attached. What are you wondering?" }
         if browser.isPageLoading { return "Page incoming. Getting comfy…" }
         switch species {
         case .corgi: return "All ears. Spot a curious bit? Select it, then tap me."
@@ -144,7 +149,7 @@ struct ContentView: View {
 
             }
             CompanionPet(
-                activity: browser.isCapturing ? .capturing : (browser.explanation == nil ? .idle : .ready),
+                activity: (browser.isCapturing || browser.isResponding) ? .capturing : ((browser.messages.last?.role == "assistant" || browser.explanation != nil) ? .ready : .idle),
                 workspaceOpen: workspaceOpen,
                 species: species
             )
@@ -155,7 +160,7 @@ struct ContentView: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityLabel("\(species.title) companion. \(workspaceOpen ? "Close" : "Open") assistant workspace")
             .accessibilityHint("Drag to move your companion")
-            .accessibilityValue(browser.isCapturing ? "Reading selection" : (browser.explanation == nil ? "Ready to explore" : "Explanation ready"))
+            .accessibilityValue(companionMessage)
             .accessibilityAction { toggleWorkspace() }
             .position(current)
         }
@@ -165,6 +170,8 @@ struct ContentView: View {
 struct AssistantWorkspace: View {
     @ObservedObject var browser: BrowserStore
     @Binding var selectedSpecies: String
+    @Binding var draft: String
+    @Binding var lastSubmitted: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let close: () -> Void
 
@@ -179,6 +186,11 @@ struct AssistantWorkspace: View {
                     .minimumScaleFactor(0.8)
                 Spacer()
                 Menu {
+                    Button("New conversation", systemImage: "square.and.pencil") {
+                        browser.clearConversation()
+                        draft = ""
+                        lastSubmitted = ""
+                    }
                     Section("Animals") {
                         ForEach(CompanionSpecies.animals) { pet in
                             Button("\(pet.symbol) \(pet.title)") {
@@ -212,48 +224,100 @@ struct AssistantWorkspace: View {
                 .accessibilityLabel("Close assistant workspace")
             }
             .padding(.horizontal, 20).padding(.top, 8)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    if browser.isCapturing {
-                        ProgressView("Reading your selection…")
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    if let error = browser.errorMessage {
-                        Label(error, systemImage: "exclamationmark.circle")
-                            .font(.subheadline).foregroundStyle(.red)
-                    }
-                    if let explanation = browser.explanation, let context = browser.context {
-                        Label(explanation.mode == "bundled-demo" ? "Bundled demo · works offline" : "Live explanation", systemImage: "checkmark.seal")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color.accentColor)
-                        Text(explanation.explanation).font(.body)
-                        sourceCard(title: context.title, url: explanation.sourceURL, quote: explanation.quote)
-                        if explanation.visual == "pendulum" { PendulumView() }
-                        Button("Clear explanation", action: browser.clearExplanation)
-                            .font(.footnote)
-                    } else {
-                        Text("Make the idea\nclick.")
-                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                        Text("Select a passage in your reading, then explore it here. Start with the bundled pendulum lesson.")
-                            .foregroundStyle(.secondary)
-                        if let context = browser.context {
-                            sourceCard(title: context.title, url: context.url, quote: context.selection)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        if browser.messages.isEmpty {
+                            Text("Keep the thought going.")
+                                .font(.system(.title2, design: .rounded, weight: .bold))
+                            Text("Select a passage in the reader, then ask a question. This conversation stays here when you close the workspace.")
+                                .font(.subheadline).foregroundStyle(.secondary)
                         }
-                        Label("Bundled lesson only · live AI not connected", systemImage: "leaf")
-                            .font(.caption).foregroundStyle(.secondary)
+                        if let context = browser.context {
+                            DisclosureGroup("Attached passage · \(context.title)") {
+                                sourceCard(title: context.title, url: context.url, quote: context.selection)
+                            }
+                            .font(.caption)
+                        }
+                        ForEach(browser.messages) { message in
+                            VStack(alignment: .leading, spacing: 7) {
+                                Text(message.role == "user" ? "YOU" : "DUOSYNC")
+                                    .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                                Text(message.content).font(.body).textSelection(.enabled)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                            .background(message.role == "user" ? Color.accentColor.opacity(0.08) : Color(.systemBackground), in: RoundedRectangle(cornerRadius: 18))
+                        }
+                        if browser.isResponding {
+                            ProgressView(browser.isCapturing ? "Reading your selected passage…" : "Waiting for your assistant…")
+                                .font(.subheadline)
+                            Text("You can close this workspace and keep reading.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        if let error = browser.chatError {
+                            VStack(alignment: .leading, spacing: 9) {
+                                Label(error, systemImage: "exclamationmark.circle")
+                                    .font(.subheadline).foregroundStyle(.red)
+                                if !lastSubmitted.isEmpty {
+                                    Button("Retry last question") { browser.sendMessage(lastSubmitted) }
+                                        .disabled(browser.isResponding)
+                                }
+                            }
+                        }
+                        if !browser.isResponding && browser.messages.isEmpty {
+                            DisclosureGroup("Try the offline pendulum lesson") {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    Text("Bundled demo · prewritten lesson, separate from live chat")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                    Button("Explore selected demo passage", action: browser.exploreSelection)
+                                        .disabled(browser.isCapturing)
+                                    if let error = browser.errorMessage { Text(error).font(.caption).foregroundStyle(.red) }
+                                    if let explanation = browser.explanation {
+                                        Text(explanation.explanation).font(.subheadline)
+                                        if explanation.visual == "pendulum" { PendulumView() }
+                                    }
+                                }
+                                .padding(.top, 10)
+                            }
+                            .font(.subheadline)
+                        }
+                        Color.clear.frame(height: 1).id("conversation-bottom")
                     }
-                    Button(action: browser.exploreSelection) {
-                        Label(browser.isCapturing ? "Reading selection…" : "Explore selection", systemImage: "sparkles")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity).padding(.vertical, 8)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(browser.isCapturing)
-                    Text("Close this panel to select another passage. Your page stays open.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                    .padding(20)
                 }
-                .padding(20).padding(.bottom, 70)
+                .onChange(of: browser.messages.count) { _, _ in proxy.scrollTo("conversation-bottom", anchor: .bottom) }
+                .onChange(of: browser.chatError) { _, _ in proxy.scrollTo("conversation-bottom", anchor: .bottom) }
             }
+            VStack(alignment: .leading, spacing: 10) {
+                TextField("Ask about your selected passage…", text: $draft, axis: .vertical)
+                    .lineLimit(1...5)
+                    .padding(12)
+                    .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+                    .accessibilityLabel("Message your assistant")
+                HStack {
+                    Text(browser.context == nil ? "Selection attaches on first send" : "Using the attached passage")
+                        .font(.caption2).foregroundStyle(.secondary)
+                    Spacer()
+                    if browser.isResponding {
+                        Button("Stop", systemImage: "stop.fill", action: browser.cancelResponse)
+                            .buttonStyle(.bordered)
+                    } else {
+                        Button("Send", systemImage: "arrow.up") {
+                            let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                            lastSubmitted = prompt
+                            browser.sendMessage(prompt)
+                            draft = ""
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 4000 || browser.isCapturing)
+                    }
+                }
+                if draft.count > 4000 { Text("Keep your message under 4,000 characters.").font(.caption).foregroundStyle(.red) }
+            }
+            .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 80)
+            .background(.regularMaterial)
+
         }
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 26))
     }
