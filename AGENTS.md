@@ -3,9 +3,9 @@
 ## Scope and clock
 
 YC × Bitrig, September 26, 2026. Hacking 11:30–15:30 PDT; feature freeze 14:45.
-Current user request: start building the focused hackathon demo with the adapted hacker-kit agents. Current priority: a real source-bound conversation with a floating AssistiveTouch-style pet, then verified Duo integration. The September 26 live conversation addendum in CONTRACT.md supersedes the original offline-only scope.
+Current user request: start building the focused hackathon demo with the adapted hacker-kit agents. Current priority: real Safari/social apps beside DuoSync, user-approved ScreenCaptureKit context, five recent observed screens and selection-free conversation with a pet inside DuoSync. The September 26 live conversation addendum in CONTRACT.md supersedes the original offline-only scope.
 
-Build one journey: read → select → pet → visual explanation → return to reading.
+Build one journey: start sharing → read in actual Safari beside DuoSync → pet → ask about screen → keep reading → follow-up.
 SwiftUI + WebKit, iOS 17 baseline, Xcode 27.1 beta for verified Duo-specific APIs. No dependencies initially. The local server now connects both clients to a server-side provider; never substitute canned text for live replies.
 Twenty-minute builder ticks; at 30 minutes blocked, report and use the documented fallback. No refactors or architecture for future reuse.
 

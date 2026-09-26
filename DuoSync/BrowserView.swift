@@ -15,6 +15,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
     @Published private(set) var isResponding = false
     @Published private(set) var chatError: String?
 
+    private var screenConversation = false
     private var responseID = UUID()
     private var responseTask: URLSessionDataTask?
     private var responseTimeout: DispatchWorkItem?
@@ -144,6 +145,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
 
     func sendMessage(_ prompt: String) {
         guard !isResponding else { return }
+        if screenConversation { clearConversation() }
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty, prompt.utf16.count <= 4_000 else {
             chatError = "Write a question of 1–4,000 characters."
@@ -175,6 +177,30 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
         }
     }
 
+    /// Sends OCR already captured through the user's active screen-sharing session.
+    func sendScreenMessage(_ prompt: String, context: PageContext) {
+        guard !isResponding else { return }
+        let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !prompt.isEmpty, prompt.utf16.count <= 4_000 else {
+            chatError = "Write a question of 1–4,000 characters."
+            return
+        }
+        guard context.url.scheme == "duosync", context.url.host == "screen" else {
+            chatError = "Start screen sharing and wait for readable text before asking."
+            return
+        }
+        if !screenConversation { clearConversation() }
+        screenConversation = true
+        cancelCapture()
+        self.context = context
+        explanation = nil
+        errorMessage = nil
+        chatError = nil
+        responseID = UUID()
+        isResponding = true
+        requestReply(prompt: prompt, context: context, requestID: responseID)
+    }
+
     private func requestReply(prompt: String, context: PageContext, requestID: UUID) {
         do {
             let endpoint = UserDefaults.standard.string(forKey: "assistantEndpoint") ?? "http://localhost:8766/api/chat"
@@ -191,14 +217,16 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
             request.httpBody = body
             request.timeoutInterval = 45
             let requestedDocument = documentID
+            let isScreenRequest = context.url.scheme == "duosync"
             let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
                 DispatchQueue.main.async {
-                    guard let self, self.responseID == requestID, self.documentID == requestedDocument else { return }
+                    guard let self, self.responseID == requestID,
+                          isScreenRequest || self.documentID == requestedDocument else { return }
                     self.responseTask = nil
                     self.responseTimeout?.cancel()
                     self.responseTimeout = nil
                     self.isResponding = false
-                    guard self.webView.url == context.url else {
+                    guard context.url.scheme == "duosync" || self.webView.url == context.url else {
                         self.clearConversation()
                         self.chatError = "The page changed. Select a passage and start again."
                         return
@@ -245,6 +273,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
     }
 
     func clearConversation() {
+        screenConversation = false
         cancelResponse()
         cancelCapture()
         messages = []
@@ -268,12 +297,12 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
     }
 
     private func invalidateDocument() {
-        clearConversation()
+        if !screenConversation { clearConversation() }
         cancelCapture()
         documentID = UUID()
         documentReady = false
         isPageLoading = true
-        context = nil
+        if !screenConversation { context = nil }
         explanation = nil
         errorMessage = nil
     }

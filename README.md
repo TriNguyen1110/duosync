@@ -1,8 +1,8 @@
 # DuoSync
 
-A little companion for what you're looking at. Read articles, browse social feeds, study a PDF, or explore an earnings report with an agent workspace beside the content. The first implementation uses an embedded web browser and a floating animated pet.
+A little companion for what you're looking at. Keep **real Safari or a social app beside DuoSync** using iPhone Duo system multitasking. Start screen sharing once, then ask questions without selecting or copying text. The pet toggles DuoSync's assistant workspace inside its own pane.
 
-**YC × Bitrig Hacks · September 26, 2026 · work in progress.** The first offline reading journey is implemented in source. Foundation context tests pass; native iOS/WebKit, pet interaction, and the compile-gated Duo layout still need the teammate’s Xcode 27.1 beta build and Simulator evidence. Real conversation transport is implemented for OpenAI or Anthropic via a local server; provider credentials and an actual model round-trip remain unverified. Voice and PDF extraction are not connected.
+**YC × Bitrig Hacks · September 26, 2026 · native verification pending.** Source includes iOS 27 ScreenCaptureKit, on-device OCR, five recent observed screen contexts, a persistent conversation and a pixel-pet roster. A real GPT-5 nano request through the local server succeeded. Native app compilation, screen capture and Duo behavior still require the teammate's Xcode 27.1 beta run. The browser preview cannot host actual iOS apps or prove native capture.
 
 ## Start
 
@@ -18,7 +18,7 @@ If you already cloned it, run `git pull --ff-only` from that checkout before ope
 
 1. Open `DuoSync.xcodeproj` in **Xcode 27.1 beta** for the event's Duo SDK.
 2. Select the `DuoSync` scheme and an iPhone Simulator. For a device, choose your signing team and a unique bundle identifier.
-3. Run. The starter loads a bundled reading page without network access. While the workspace is closed, the pet shows a short speech-bubble update based on page loading, selection capture, results, or errors. Tap the pet or bubble to open the workspace; tap the pet or close control to close it. Drag the pet to another position. Choose a pixel-art animal or retro companion from the workspace menu. Use the address field to browse an HTTPS page.
+3. For screen context, add `SCREEN_CAPTURE_SDK` under target → Build Settings → Active Compilation Conditions. Build with an iOS 27 SDK and run on iOS 27+. The app starts in Shared screen mode. Tap Start screen sharing, approve the system picker, and arrange actual Safari beside DuoSync. Wait for a timestamped screen observation, tap the pet, and ask. The pet remains in DuoSync’s own pane. Browser mode is a separate fallback.
 4. Read `AGENTS.md`, `CONTRACT.md`, and `BOARD.tsv` before continuing development.
 
 `tests/run_context_tests.sh` runs the Foundation context regressions with Command Line Tools. `python3 scripts/check_scaffold.py` checks repository wiring without Xcode. With Xcode selected, `scripts/build.sh` compiles for a generic iOS Simulator. These are different checks: the first cannot prove the app compiles or its interface works.
@@ -27,9 +27,17 @@ If you already cloned it, run `git pull --ff-only` from that checkout before ope
 
 Start the [local assistant server](server/README.md) on the same Mac as your iOS Simulator. Configure the provider, model, and API key only in its ignored local `server/.env`. No keys belong in the app or browser.
 
-Select a passage → tap the pet → type a question → Send. The assistant workspace keeps the conversation and source attached for follow-up questions. Close it to keep reading; the pet shows actual waiting, completion, or error status, and reopening restores the session. Stop cancels the request. Navigating to a new document clears the native conversation so it cannot reuse the wrong source. A missing API configuration produces a setup error.
+In Shared screen mode, start sharing → read in an actual app → tap the pet → ask → Send. No selection or copy/paste is required. In the Browser fallback, select a passage first. The assistant workspace keeps the conversation and source attached for follow-up questions. Close it to keep reading; the pet shows actual waiting, completion, or error status, and reopening restores the session. Stop cancels the request. Navigating to a new document clears the native conversation so it cannot reuse the wrong source. A missing API configuration produces a setup error.
 
 The browser session at `http://127.0.0.1:8766/design/pet-preview.html?embed=1` uses the same chat connection and can be loaded into an online Duo shell. This is an interaction preview; the SwiftUI app must still be built with Xcode/Bitrig for the native Duo demo.
+
+## Screen context limits and setup
+
+The app requests system screen-sharing permission and processes one sampled frame approximately every three seconds using on-device text recognition. It retains five distinct text observations in memory, with timestamps. These are **five recent observed screens**, not a list of five running apps, and capture cannot retrieve screens from before sharing started. Images/video are not stored or uploaded. Text goes to the model only when you send a question.
+
+Use Pause sharing to stop capture while retaining recent context, or Stop & clear to remove it. The full-display stream can include DuoSync's own UI; ambiguous text needs clarification. OCR does not provide full understanding of photos, videos, or charts. The pet is confined to DuoSync's own window; a systemwide AssistiveTouch overlay is not implemented.
+
+**First native check:** Apple's sample specifies an iOS 27+ device. Verify whether the event's Duo Simulator supports the full-display capture path before rehearsing. Simulator support and capture have not been tested here; if unavailable, record that blocker explicitly rather than presenting browser data as cross-app capture. [Capture evidence and requirements](docs/SCREEN_CONTEXT.md) · [Duo multitasking evidence](docs/DUO_CONTEXT_LIMITS.md).
 
 ## View in Device Hub
 
@@ -61,7 +69,7 @@ Sources: [Bitrig's Duo setup](https://bitrig.com/blog/bitrig-builds-iphone-duo-a
 
 ## The one demo we're building
 
-Read a passage → select it → tap the pet → ask a question → keep reading while the assistant answers → reopen for a follow-up. On Duo, keep reading and conversation side by side. The prewritten pendulum visual remains an explicitly labeled offline fallback.
+Start sharing → read in actual Safari beside DuoSync → ask about the visible screen → keep reading while the assistant answers → reopen for a follow-up. On Duo, keep reading and conversation side by side. The prewritten pendulum visual remains an explicitly labeled offline fallback.
 
 Implemented source includes a persistent `WKWebView`, draggable animated pixel-art companion roster with closed-state activity bubbles, source-bound selection capture, an explicitly prewritten pendulum explanation, and an interactive small-angle visual. Bubble copy is playful but reflects local app state; it does not claim background AI work. Arbitrary readable web pages can supply a selection for real chat through the configured local server; no fabricated answer is used when the connection is missing. The `DUO_SDK` build flag enables the documented native arrangement path; it still needs SDK/runtime verification. [Preview the companion interaction](design/pet-preview.html) in a browser; this is a design preview, not the running iOS app.
 

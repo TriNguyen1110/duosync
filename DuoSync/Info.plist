@@ -15,5 +15,11 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>DuoSync reads text from the screen you choose to share so your companion can help without copy and paste. Recent text stays in memory and is sent to your assistant only when you ask.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>screen-capture</string>
+	</array>
 </dict>
 </plist>

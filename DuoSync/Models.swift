@@ -44,7 +44,8 @@ enum ContextValidation {
                         title: String, text: String, selection: String,
                         capturedAt: Date = Date()) throws -> PageContext {
         guard let sourceURL = URL(string: reportedURL), sourceURL == expectedURL,
-              ["http", "https", "file"].contains(sourceURL.scheme?.lowercased() ?? ""),
+              (["http", "https", "file"].contains(sourceURL.scheme?.lowercased() ?? "")
+                || (sourceURL.scheme == "duosync" && sourceURL.host == "screen")),
               text.utf16.count <= textLimit else { throw Failure.invalidSource }
         guard !selection.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw Failure.emptySelection
@@ -130,5 +131,39 @@ enum ChatTransport {
             throw Failure.invalidReply
         }
         return text
+    }
+}
+
+
+/// A text observation from this user-started sharing session, never an app-history claim.
+struct ScreenSnapshot: Identifiable {
+    let id: UUID
+    let text: String
+    let capturedAt: Date
+    init(id: UUID = UUID(), text: String, capturedAt: Date = Date()) {
+        self.id = id; self.text = text; self.capturedAt = capturedAt
+    }
+}
+
+enum ScreenContextPayload {
+    private static func bounded(_ text: String, limit: Int) -> String {
+        var result = String(text.prefix(limit))
+        while result.utf16.count > limit { result.removeLast() }
+        return result
+    }
+
+    static func make(snapshots: [ScreenSnapshot]) -> PageContext? {
+        let recent = Array(snapshots.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted { $0.capturedAt > $1.capturedAt }.prefix(5))
+        guard let latest = recent.first else { return nil }
+        let date = ISO8601DateFormatter()
+        let excerpts = recent.enumerated().map { index, snapshot in
+            "[\(index == 0 ? "LATEST OBSERVED SCREEN" : "EARLIER OBSERVED SCREEN") · \(date.string(from: snapshot.capturedAt))]\n"
+                + bounded(snapshot.text, limit: 2_000)
+        }
+        let text = "User-approved shared-screen OCR, newest first. Text may contain recognition errors and DuoSync UI. These are screen observations, not verified app identities. No screens before this sharing session are available.\n\n" + excerpts.joined(separator: "\n\n")
+        return PageContext(documentID: latest.id, title: "Recent shared screens (\(recent.count))",
+            url: URL(string: "duosync://screen/\(latest.id.uuidString)")!, text: text,
+            selection: bounded(latest.text, limit: 2_000), capturedAt: latest.capturedAt)
     }
 }
