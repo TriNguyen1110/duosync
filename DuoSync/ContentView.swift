@@ -25,7 +25,7 @@ struct ContentView: View {
                         if workspaceOpen {
                             assistant
                         } else {
-                            ScreenContextSurface(screens: screens, openAssistant: toggleWorkspace)
+                            ScreenContextSurface(screens: screens, openAssistant: toggleWorkspace, clearSession: clearScreenSession)
                         }
                     } else {
                         DuoLayout(workspaceOpen: workspaceOpen) {
@@ -52,7 +52,16 @@ struct ContentView: View {
     private var assistant: some View {
         AssistantWorkspace(browser: browser, screens: screens, screenMode: screenMode,
                            selectedSpecies: $selectedSpecies, draft: $draft,
-                           lastSubmitted: $lastSubmitted, close: toggleWorkspace)
+                           lastSubmitted: $lastSubmitted, close: toggleWorkspace,
+                           clearSession: clearScreenSession)
+    }
+
+    private func clearScreenSession() {
+        browser.clearConversation()
+        browser.clearExplanation()
+        screens.clearHistory()
+        draft = ""
+        lastSubmitted = ""
     }
 
     private var header: some View {
@@ -216,6 +225,7 @@ struct AssistantWorkspace: View {
     @Binding var lastSubmitted: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let close: () -> Void
+    let clearSession: () -> Void
 
     private var species: CompanionSpecies { CompanionSpecies(rawValue: selectedSpecies) ?? .corgi }
     private var screenContext: PageContext? { ScreenContextPayload.make(snapshots: screens.snapshots) }
@@ -287,12 +297,12 @@ struct AssistantWorkspace: View {
                         }
                         if screenMode {
                             DisclosureGroup("Screen context · \(screens.snapshots.count) of 5 remembered") {
-                                ScreenContextControls(screens: screens)
+                                ScreenContextControls(screens: screens, clearSession: clearSession)
                                 ScreenHistory(screens: screens)
                             }
                             .font(.subheadline)
                             if screens.currentSnapshot == nil {
-                                ScreenContextControls(screens: screens)
+                                ScreenContextControls(screens: screens, clearSession: clearSession)
                             }
                         }
                         if let context = browser.context {
@@ -424,6 +434,7 @@ private struct CompanionBubbleSize: PreferenceKey {
 private struct ScreenContextSurface: View {
     @ObservedObject var screens: ScreenContextStore
     let openAssistant: () -> Void
+    let clearSession: () -> Void
 
     var body: some View {
         ScrollView {
@@ -434,7 +445,7 @@ private struct ScreenContextSurface: View {
                     .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 Text("Start screen sharing, then use Safari, social apps, or anything else you’re exploring. Return here — or place DuoSync beside another app — to ask about what you’ve seen.")
                     .foregroundStyle(.secondary)
-                ScreenContextControls(screens: screens)
+                ScreenContextControls(screens: screens, clearSession: clearSession)
                 Button("Open assistant", systemImage: "bubble.left.and.bubble.right", action: openAssistant)
                     .buttonStyle(.borderedProminent)
                 ScreenHistory(screens: screens)
@@ -451,6 +462,7 @@ private struct ScreenContextSurface: View {
 
 private struct ScreenContextControls: View {
     @ObservedObject var screens: ScreenContextStore
+    let clearSession: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -470,14 +482,14 @@ private struct ScreenContextControls: View {
                             Button("Pause sharing", systemImage: "pause", action: screens.stopCapture)
                             Button("Stop & clear", systemImage: "stop") {
                                 screens.stopCapture()
-                                screens.clearHistory()
+                                clearSession()
                             }
                         }
                         VStack(alignment: .leading) {
                             Button("Pause sharing", systemImage: "pause", action: screens.stopCapture)
                             Button("Stop & clear", systemImage: "stop") {
                                 screens.stopCapture()
-                                screens.clearHistory()
+                                clearSession()
                             }
                         }
                     }
@@ -491,11 +503,11 @@ private struct ScreenContextControls: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             if !screens.snapshots.isEmpty {
-                Button("Clear recent screens", role: .destructive, action: screens.clearHistory)
+                Button("Clear screens & conversation", role: .destructive, action: clearSession)
                     .font(.caption)
                 Text(screens.isCapturing ? "Sharing is running; new screen text can appear after clearing." : "Sharing is paused or stopped. These remembered screens remain until cleared.")
                     .font(.caption2).foregroundStyle(.secondary)
-                Text("Screens already sent with a question remain in that conversation until you start a new chat.")
+                Text("Clear removes recent screen text, this conversation, and your draft from DuoSync. It cannot recall information already sent to the assistant server.")
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
