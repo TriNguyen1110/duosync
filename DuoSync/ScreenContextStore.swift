@@ -142,7 +142,6 @@ private final class ScreenCaptureEngine: NSObject, SCContentSharingPickerObserve
     func present() {
         let picker = SCContentSharingPicker.shared
         var config = SCContentSharingPickerConfiguration()
-        config.allowedPickerModes = [.singleDisplay]
         config.showsMicrophoneControl = false
         config.showsCameraControl = false
         picker.defaultConfiguration = config
@@ -196,8 +195,8 @@ private final class ScreenCaptureEngine: NSObject, SCContentSharingPickerObserve
         guard active, stream == nil else { return }
         let config = SCStreamConfiguration()
         config.capturesAudio = false
-        config.captureMicrophone = false
-        config.minimumFrameInterval = CMTime(value: 3, timescale: 1)
+        // iOS exposes no documented captureMicrophone/minimumFrameInterval setters.
+        // Attach only screen output; the serial OCR consumer enforces its own 3-second throttle.
         let newStream = SCStream(filter: filter, configuration: config, delegate: self)
         let textOutput = ScreenTextOutput { [weak self, weak newStream] text, date in
             DispatchQueue.main.async {
