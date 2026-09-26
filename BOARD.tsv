@@ -1,0 +1,9 @@
+ts	kind	id	value	owner	scope	note
+2026-09-26T19:10:50+00:00	item	init	doing	main	INIT	Initialize public starter and adapt hacker kit; no full demo build
+2026-09-26T19:10:50+00:00	fact	native.environment	no-xcode	main	INIT	Command-line tools only; native compile and UI checks unverified
+2026-09-26T19:10:50+00:00	item	starter-ui	backlog	frontend	SCREEN	Compile and run starter; verify pet tap/drag and persistent browser
+2026-09-26T19:10:50+00:00	item	page-context	backlog	backend	DATA	Implement source-bound selection and navigation invalidation
+2026-09-26T19:10:50+00:00	item	pendulum	backlog	frontend	SCREEN	Add deterministic interactive visual with labeled fixture and source
+2026-09-26T19:10:50+00:00	item	duo-layout	backlog	frontend	SCREEN	Implement verified ArrangementView and test Duo folds
+2026-09-26T19:10:50+00:00	item	live-provider	backlog	backend	DATA	Optional after offline demo; server-side secrets and bounded requests
+2026-09-26T19:10:50+00:00	item	recording	backlog	main	SCREEN	Rehearse and record before 15:15 PDT
