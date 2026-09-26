@@ -9,6 +9,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
     @Published private(set) var context: PageContext?
     @Published private(set) var explanation: Explanation?
     @Published private(set) var isCapturing = false
+    @Published private(set) var isPageLoading = true
 
     private var documentID = UUID()
     private var captureID = UUID()
@@ -25,6 +26,8 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
 
     func loadDemo() {
         guard let url = bundledURL else {
+            cancelCapture()
+            isPageLoading = false
             errorMessage = "The bundled reading page is missing."
             return
         }
@@ -132,6 +135,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
         cancelCapture()
         documentID = UUID()
         documentReady = false
+        isPageLoading = true
         context = nil
         explanation = nil
         errorMessage = nil
@@ -163,6 +167,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         documentReady = true
+        isPageLoading = false
         address = webView.url?.isFileURL == true ? "" : (webView.url?.absoluteString ?? "")
         errorMessage = nil
     }
@@ -177,12 +182,22 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         invalidateDocument()
+        isPageLoading = false
         errorMessage = "The page stopped responding. Open the bundled demo or reload its web address."
     }
 
     private func show(_ error: Error) {
-        guard (error as NSError).code != NSURLErrorCancelled else { return }
+        guard (error as NSError).code != NSURLErrorCancelled else {
+            // Superseded navigation may still be loading. A genuinely stopped load must settle.
+            if !webView.isLoading && !documentReady {
+                cancelCapture()
+                isPageLoading = false
+                errorMessage = "Page loading was cancelled. Open the bundled demo or reload its web address."
+            }
+            return
+        }
         invalidateDocument()
+        isPageLoading = false
         errorMessage = "Couldn't load this page. Try again or open the bundled demo."
     }
 }
