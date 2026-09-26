@@ -305,15 +305,16 @@ struct AssistantWorkspace: View {
                     } else {
                         Button("Send", systemImage: "arrow.up") {
                             let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !prompt.isEmpty, prompt.utf16.count <= 4000 else { return }
                             lastSubmitted = prompt
                             browser.sendMessage(prompt)
                             draft = ""
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.count > 4000 || browser.isCapturing)
+                        .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.utf16.count > 4000 || browser.isCapturing)
                     }
                 }
-                if draft.count > 4000 { Text("Keep your message under 4,000 characters.").font(.caption).foregroundStyle(.red) }
+                if draft.utf16.count > 4000 { Text("Keep your message under 4,000 text units (some emoji count as two).").font(.caption).foregroundStyle(.red) }
             }
             .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 80)
             .background(.regularMaterial)
