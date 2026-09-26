@@ -314,7 +314,7 @@ struct AssistantWorkspace: View {
                         .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.utf16.count > 4000 || browser.isCapturing)
                     }
                 }
-                if draft.utf16.count > 4000 { Text("Keep your message under 4,000 text units (some emoji count as two).").font(.caption).foregroundStyle(.red) }
+                if draft.utf16.count > 4000 { Text("This message is too long. Shorten it to send.").font(.caption).foregroundStyle(.red) }
             }
             .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 80)
             .background(.regularMaterial)
