@@ -1,3 +1,13 @@
+# Current demo handoff — frontend clones
+
+The latest user clarification supersedes earlier capture-first plans below: **clone familiar frontends inside DuoSync for the demo**. Default Demo apps mode provides Safari-like news, Feed and Reels, automatic visible-source attachment, recent app context, persistent chat, pet status and a real GPT-5 nano Check this response. No screen-sharing permission or actual app integration is required.
+
+Pull `demo/live-session` / [draft PR #1](https://github.com/TriNguyen1110/duosync/pull/1), run the local server per server/README.md, and build/run with Xcode 27.1 beta on the teammate's Mac. No `SCREEN_CAPTURE_SDK` flag is needed; use `DUO_SDK` only for the native arrangement path. Please test Feed → pet → Check this → close → scroll/switch Reels → ask about current and previous content, then record the native Duo demo. First build error or screenshots are the next needed evidence.
+
+Provider and browser interaction are verified; native build/UI remain unverified. Claim critique must show uncertainty, no fabricated verification or definitive AI-video diagnosis. The earlier implementation history is retained below for context, not the current rehearsal instructions.
+
+---
+
 # Native build handoff
 
 Use Xcode 27.1 beta on the teammate's Mac running macOS Tahoe 26.6 or later. The coordinator's Mac is on 26.0.1, so it cannot launch that Xcode beta. This repository is work in progress; review items are not a claim of a running native demo.

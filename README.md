@@ -1,93 +1,62 @@
 # DuoSync
 
-A little companion for what you're looking at. Keep **real Safari or a social app beside DuoSync** using iPhone Duo system multitasking. Start screen sharing once, then ask questions without selecting or copying text. The pet toggles DuoSync's assistant workspace inside its own pane.
+A floating pet assistant for whatever you're looking at. The hackathon demo contains **frontend clones** of a Safari-style news reader, a social feed, and Reels. Scroll naturally; the assistant automatically gets the visible article/post/reel and recent demo-app context. Tap the pet to open a persistent workspace beside the content, ask a question, or choose **Check this**.
 
-**YC × Bitrig Hacks · September 26, 2026 · native verification pending.** Source includes iOS 27 ScreenCaptureKit, on-device OCR, five recent observed screen contexts, a persistent conversation and a pixel-pet roster. A real GPT-5 nano request through the local server succeeded. Native app compilation, screen capture and Duo behavior still require the teammate's Xcode 27.1 beta run. The browser preview cannot host actual iOS apps or prove native capture.
+**YC × Bitrig · September 26, 2026.** Native SwiftUI source and a browser interaction preview are included. Real GPT-5 nano responses work through the local server. Native Xcode compilation and Duo Simulator interaction remain unverified on this Mac.
 
-## Start
-
-Get the project on the Mac that has Xcode:
+## Run the current demo branch
 
 ```sh
-git clone https://github.com/TriNguyen1110/duosync.git
+git clone --branch demo/live-session https://github.com/TriNguyen1110/duosync.git
 cd duosync
 open DuoSync.xcodeproj
 ```
 
-If you already cloned it, run `git pull --ff-only` from that checkout before opening the project. Commit or otherwise preserve your own edits before updating; do not discard teammates' work.
+For an existing checkout, preserve local edits, then fetch and switch to `demo/live-session`. The active handoff is [draft PR #1](https://github.com/TriNguyen1110/duosync/pull/1).
 
-1. Open `DuoSync.xcodeproj` in **Xcode 27.1 beta** for the event's Duo SDK.
-2. Select the `DuoSync` scheme and an iPhone Simulator. For a device, choose your signing team and a unique bundle identifier.
-3. For screen context, add `SCREEN_CAPTURE_SDK` under target → Build Settings → Active Compilation Conditions. Build with an iOS 27 SDK and run on iOS 27+. The app starts in Shared screen mode. Tap Start screen sharing, approve the system picker, and arrange actual Safari beside DuoSync. Wait for a timestamped screen observation, tap the pet, and ask. The pet remains in DuoSync’s own pane. Browser mode is a separate fallback.
-4. Read `AGENTS.md`, `CONTRACT.md`, and `BOARD.tsv` before continuing development.
+1. On the teammate's Mac, open the project in **Xcode 27.1 beta** and select the DuoSync scheme / iPhone Duo simulator.
+2. Run the [local assistant server](server/README.md) on that same Mac. Set the API key only in ignored `server/.env`; no credentials belong in Swift, the browser, or Git. The default example uses **GPT-5 nano**, minimal reasoning and short replies.
+3. Run the app. **Demo apps is the default source**. No screen-recording permission, selection, login or real social account is required. Choose Browser, Feed or Reels; tap the pet; ask about the visible content.
+4. Add `DUO_SDK` to target → Build Settings → Active Compilation Conditions for the documented fold-aware arrangement; without it, ordinary adaptive split/overlay layout runs. The Duo SDK path still needs native testing.
 
-`tests/run_context_tests.sh` runs the Foundation context regressions with Command Line Tools. `python3 scripts/check_scaffold.py` checks repository wiring without Xcode. With Xcode selected, `scripts/build.sh` compiles for a generic iOS Simulator. These are different checks: the first cannot prove the app compiles or its interface works.
+The primary demo does **not** need `SCREEN_CAPTURE_SDK`. System screen sharing and the owned live browser remain experimental sources in the optional menu; they are not part of the rehearsal path.
 
-## Real assistant session
+## Demo journey
 
-Start the [local assistant server](server/README.md) on the same Mac as your iOS Simulator. Configure the provider, model, and API key only in its ignored local `server/.env`. No keys belong in the app or browser.
+1. Open Feed and read the implausible five-second battery charging claim.
+2. Tap the pet → **Check this**. A real model response explains missing specs, absent sources, and what evidence would support the claim.
+3. Close the workspace. The pet shows actual waiting/completion/error status while you continue browsing.
+4. Switch to Reels and scroll to the stylized city. Ask “Could this be AI?” The answer must distinguish available clues from missing provenance, not pretend that text alone proves how a video was created.
+5. Ask about the previous battery post. Recent demo-app context and conversation remain available.
 
-In Shared screen mode, start sharing → read in an actual app → tap the pet → ask → Send. No selection or copy/paste is required. In the Browser fallback, select a passage first. The assistant workspace keeps the conversation and source attached for follow-up questions. Close it to keep reading; the pet shows actual waiting, completion, or error status, and reopening restores the session. Stop cancels the request. Navigating to a new document clears the native conversation so it cannot reuse the wrong source. A missing API configuration produces a setup error.
+Three demo frontends are seeded. The recent-context store can hold five distinct demo apps, currently at most three. It updates the visible passage/card as you scroll and remembers each demo app's latest context. All personas, claims and study details are fictional demonstration content. Likes/saves affect local prototype state only.
 
-The browser session at `http://127.0.0.1:8766/design/pet-preview.html?embed=1` uses the same chat connection and can be loaded into an online Duo shell. This is an interaction preview; the SwiftUI app must still be built with Xcode/Bitrig for the native Duo demo.
+**Check this is a contextual critique, not a verified fact-check or forensic AI detector.** The model sees visible text/captions and descriptions of demo artwork; it does not search the web or inspect real video frames. It identifies unsupported claims, explains uncertainty, and suggests what evidence to check.
 
-## Screen context limits and setup
+## Preview the interaction now
 
-The app requests system screen-sharing permission and processes one sampled frame approximately every three seconds using on-device text recognition. It retains five distinct text observations in memory, with timestamps. These are **five recent observed screens**, not a list of five running apps, and capture cannot retrieve screens from before sharing started. Images/video are not stored or uploaded. Text goes to the model only when you send a question.
+Start the server, then open:
 
-Use Pause sharing to stop capture while retaining recent context, or Stop & clear to remove it. The full-display stream can include DuoSync's own UI; ambiguous text needs clarification. OCR does not provide full understanding of photos, videos, or charts. The pet is confined to DuoSync's own window; a systemwide AssistiveTouch overlay is not implemented.
+`http://127.0.0.1:8766/design/demo-session.html`
 
-**First native check:** Apple's sample specifies an iOS 27+ device. Verify whether the event's Duo Simulator supports the full-display capture path before rehearsing. Simulator support and capture have not been tested here; if unavailable, record that blocker explicitly rather than presenting browser data as cross-app capture. [Capture evidence and requirements](docs/SCREEN_CONTEXT.md) · [Duo multitasking evidence](docs/DUO_CONTEXT_LIMITS.md).
+Paste that URL into the [online Duo layout shell](https://progressier.com/iphone-duo-simulator). This preview has the same demo journeys, automatic context, pet roster and live response connection. It is a browser rendition, not a compiled iOS app. The shell uses separate inner/outer web frames, so fold continuity there does not prove native state handling.
 
-## View in Device Hub
+The older [pet gallery](design/pet-preview.html) remains an asset playground. The [new session frontend](design/demo-session.html) is the demo preview.
 
-Device Hub displays the app that Xcode builds and installs on a simulator. You do not upload a GitHub URL or Swift source files to Device Hub.
+## Xcode, Device Hub and Bitrig
 
-1. Install **Xcode 27.1 beta** and its **iOS 27.1 Simulator runtime** on the teammate's Mac.
-2. Open `DuoSync.xcodeproj`. Choose the **DuoSync** scheme in Xcode's toolbar.
-3. Choose **iPhone Duo** as the run destination. If it is missing, open **Xcode → Open Developer Tool → Device Hub** (or **Manage Devices…** in the run-destination menu), click **+**, and create an iOS 27.1 / iPhone Duo simulator. Install the runtime first if that configuration is unavailable.
-4. For our Duo-specific layout, select the DuoSync target → **Build Settings → Swift Compiler – Custom Flags → Active Compilation Conditions** and add `DUO_SDK` for the configuration you run. Keep the existing inherited/Debug conditions. Without this flag, the app uses its ordinary adaptive layout.
-5. Press **⌘R** in Xcode. After a successful build, Xcode installs and launches the app; Device Hub opens its interactive screen automatically.
-6. Tap **Demo**, select a sentence in the reading page, tap the pet, then ask a question and **Send**. **Open bundled lesson** remains a separate prewritten visual. Use the [native handoff checklist](docs/TEAM_HANDOFF.md) to verify reading, pet, and folded layouts.
+Device Hub shows the app built by Xcode; it cannot run a repository URL. Install Xcode 27.1 beta and the iOS 27.1 runtime, choose/create an iPhone Duo run destination, then press ⌘R. If needed, use Xcode → Open Developer Tool → Device Hub or Manage Devices in the destination menu. A physical iPhone additionally needs pairing, signing and Developer Mode.
 
-For a physical iPhone, connect it to the Mac, trust the Mac, pair it in Device Hub, and enable Developer Mode when prompted. Choose a signing team in Xcode, select that device as the run destination, and press ⌘R. In Device Hub, choose the device and **View Screen**. The hackathon Duo demo uses the simulator.
+Bitrig can open the existing local Xcode project and display its folding simulator. It still needs the appropriate Xcode and simulator runtime. Its exact import UI has not been tested on this Mac; use Xcode/Device Hub if blocked. [Apple Device Hub](https://developer.apple.com/documentation/xcode/managing-your-simulated-and-physical-devices-in-device-hub) · [Bitrig Duo setup](https://bitrig.com/blog/bitrig-builds-iphone-duo-apps).
 
-Sources: [Apple's Device Hub setup](https://developer.apple.com/documentation/xcode/managing-your-simulated-and-physical-devices-in-device-hub) and [running/interacting with the app](https://developer.apple.com/documentation/xcode/interacting-with-your-app-in-the-ios-or-ipados-simulator).
+## Validation and deadline
 
-## View in Bitrig for Mac
+- `python3 scripts/check_scaffold.py`: project/resource wiring only.
+- `bash tests/run_context_tests.sh`: 35 Foundation source/transport/screen-payload cases.
+- `python3 tests/run_demo_store_tests.py`: 11 production demo-store state cases with UI wrappers stubbed.
+- `node --test tests/server.test.mjs`: 11 server/provider mapping and failure/cancellation cases using mocked providers.
+- `scripts/build.sh`: actual Simulator build, requires Xcode.
 
-Bitrig supports existing Xcode projects and provides a 3D folding Duo simulator. It still needs **Xcode 27.1 beta + the iOS 27.1 Simulator runtime**; it does not remove that prerequisite.
+Browser-tested: automatic feed context → real GPT-5 nano claim critique → pet close → Reels switch/scroll → new current context with the prior conversation intact. Native rendering, scrolling, fold layout and accessibility still need the teammate's build and interaction evidence. Do not equate portable parsing/tests with native success.
 
-1. Clone/pull this repo locally as above.
-2. Open the existing local `DuoSync.xcodeproj` in Bitrig's project-opening flow. Use this existing project rather than starting a new generated app. Exact menu labels may differ by Bitrig version; we have not tested its import UI on this Mac.
-3. Configure Bitrig to use Xcode 27.1 beta and select its iPhone Duo simulator. Enable `DUO_SDK` in the project as described above.
-4. Build/run the project in Bitrig. Its simulator displays the running native app and lets you fold and rotate the device. If opening the project is unclear, use the verified Xcode/Device Hub workflow above or ask the on-site Bitrig team for the current import control.
-
-Sources: [Bitrig's Duo setup](https://bitrig.com/blog/bitrig-builds-iphone-duo-apps) and [existing team Xcode projects](https://bitrig.com/blog/turn-figma-designs-into-native-swift).
-
-**Current verification:** these setup steps follow vendor documentation; this project's native build and simulator behavior still need to be run on the teammate's Mac. A compiler failure must be fixed before either viewer can display the app. Send the first build error and Xcode version back to the project coordinator.
-
-## The one demo we're building
-
-Start sharing → read in actual Safari beside DuoSync → ask about the visible screen → keep reading while the assistant answers → reopen for a follow-up. On Duo, keep reading and conversation side by side. The prewritten pendulum visual remains an explicitly labeled offline fallback.
-
-Implemented source includes a persistent `WKWebView`, draggable animated pixel-art companion roster with closed-state activity bubbles, source-bound selection capture, an explicitly prewritten pendulum explanation, and an interactive small-angle visual. Bubble copy is playful but reflects local app state; it does not claim background AI work. Arbitrary readable web pages can supply a selection for real chat through the configured local server; no fabricated answer is used when the connection is missing. The `DUO_SDK` build flag enables the documented native arrangement path; it still needs SDK/runtime verification. [Preview the companion interaction](design/pet-preview.html) in a browser; this is a design preview, not the running iOS app.
-
-## Build order
-
-| Order | Deliverable | Owner |
-|---|---|---|
-| 1 | Compile and run the starter; verify pet, browser navigation, and close/reopen | frontend + verifier |
-| 2 | Selected passage + source identity from the current browser document | backend |
-| 3 | Deterministic, labeled pendulum visual and source card | frontend |
-| 4 | Duo `ArrangementView` with shared browser/workspace state | frontend |
-| 5 | Real conversation through a server-side provider | backend + main |
-| 6 | Simulator/device rehearsal, recording, and pitch | verifier + main |
-
-Freeze features at **14:45 PDT**. Use **14:45–15:15** for verification and recording, then submission/rehearsal before the **15:30** judging window. Do not spend the deadline on voice, auth, email, ride booking, or system settings.
-
-## Hacker kit
-
-Adapted from [TriNguyen1110/hacker-kit](https://github.com/TriNguyen1110/hacker-kit): separate state and UI owners, an append-only board, and a verifier who alone can mark work done. The local source kit is unchanged. Removed scraper, Port, dashboard tooling, and fixed model overrides; shortened ticks to 20 minutes; added native Simulator and Duo checks. `CLAUDE.md` points to the same rules as Codex.
-
-See [the brief](docs/BRIEF.md), [source sync](docs/SOURCE_SYNC.md), [native handoff](docs/TEAM_HANDOFF.md), [pet asset and prompt](docs/PET_ASSET.md), and [motion preview](design/pet-preview.html). MIT licensed.
+Feature freeze **14:45 PDT**; use the remaining window for native verification/recording before **15:30** judging. See [current team handoff](docs/TEAM_HANDOFF.md). Adapted from [hacker-kit](https://github.com/TriNguyen1110/hacker-kit): bounded UI/state owners, append-only `BOARD.tsv`, separate verifier. MIT licensed.

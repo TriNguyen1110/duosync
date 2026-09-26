@@ -33,7 +33,7 @@ for phase_id in target["buildPhases"]:
         assert (location.is_dir() if name.endswith(".xcassets") else location.is_file()), f"Unresolved build resource: {name}"
         referenced.add(name)
 assert referenced == {"DuoSyncApp.swift", "BrowserView.swift", "ContentView.swift", "Reading.html",
-                      "Models.swift", "PendulumView.swift", "DuoLayout.swift", "CompanionPet.swift", "ScreenContextStore.swift", "Assets.xcassets"}
+                      "Models.swift", "PendulumView.swift", "DuoLayout.swift", "CompanionPet.swift", "ScreenContextStore.swift", "DemoApps.swift", "Assets.xcassets"}
 scheme = ET.parse(root / "DuoSync.xcodeproj/xcshareddata/xcschemes/DuoSync.xcscheme")
 for reference in scheme.findall(".//BuildableReference"):
     assert reference.attrib["BlueprintIdentifier"] == target_ids[0]
