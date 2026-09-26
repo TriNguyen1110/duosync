@@ -1,6 +1,6 @@
 # DuoSync
 
-A floating pet assistant for whatever you're looking at. The hackathon demo contains **frontend clones** of a Safari-style news reader, a social feed, and Reels. Scroll naturally; the assistant automatically gets the visible article/post/reel and recent demo-app context. Tap the pet to open a persistent workspace beside the content, ask a question, or choose **Check this**.
+A floating pet assistant for whatever you're looking at. The hackathon demo contains **frontend clones** of a Finance earnings reader, Safari-style news, a social feed, and Reels. Scroll naturally; the assistant automatically gets the visible article/post/reel and recent demo-app context. Tap the pet to open a persistent workspace beside the content, ask a question, or choose **Check this**.
 
 **YC × Bitrig · September 26, 2026.** Native SwiftUI source and a browser interaction preview are included. Real GPT-5 nano responses work through the local server. Native Xcode compilation and Duo Simulator interaction remain unverified on this Mac.
 
@@ -16,12 +16,18 @@ For an existing checkout, preserve local edits, then fetch and switch to `demo/l
 
 1. On the teammate's Mac, open the project in **Xcode 27.1 beta** and select the DuoSync scheme / iPhone Duo simulator.
 2. Run the [local assistant server](server/README.md) on that same Mac. Set the API key only in ignored `server/.env`; no credentials belong in Swift, the browser, or Git. The default example uses **GPT-5 nano**, minimal reasoning and short replies.
-3. Run the app. **Demo apps is the default source**. No screen-recording permission, selection, login or real social account is required. Choose Browser, Feed or Reels; tap the pet; ask about the visible content.
+3. Run the app. **Demo apps is the default source**. No screen-recording permission, selection, login or real social account is required. Start in Finance, or choose Browser, Feed or Reels; tap the pet; ask about the visible content.
 4. Add `DUO_SDK` to target → Build Settings → Active Compilation Conditions for the documented fold-aware arrangement; without it, ordinary adaptive split/overlay layout runs. The Duo SDK path still needs native testing.
 
 The primary demo does **not** need `SCREEN_CAPTURE_SDK`. System screen sharing and the owned live browser remain experimental sources in the optional menu; they are not part of the rehearsal path.
 
-## Demo journey
+## Earnings demo
+
+Finance opens with a Yahoo Finance–inspired reading surface and sourced **Alphabet FY2024 annual results**. Scroll to capital expenditure, then ask “Why did spending jump?” The source follows automatically, and the assistant gives a short explanation while you keep reading. Close/reopen with the pet; switch to Feed without losing the conversation.
+
+The two-year chart compares $32.3B (2023) and $52.5B (2024); approximately 62.5% growth is calculated from rounded reported amounts. Revenue, operating income, margin and EPS come from [Alphabet’s 2024 Form 10-K](https://www.sec.gov/Archives/edgar/data/1652044/000165204425000014/goog-20241231.htm). These are historical results, not live quotes; no ten-year or peer series is invented. The warm ivory shell, serif workspace headline, source card and composer align with the teammate’s reference while keeping DuoSync’s pets.
+
+## Feed demo journey
 
 1. Open Feed and read the implausible five-second battery charging claim.
 2. Tap the pet → **Check this**. A real model response explains missing specs, absent sources, and what evidence would support the claim.
@@ -29,7 +35,7 @@ The primary demo does **not** need `SCREEN_CAPTURE_SDK`. System screen sharing a
 4. Switch to Reels and scroll to the stylized city. Ask “Could this be AI?” The answer must distinguish available clues from missing provenance, not pretend that text alone proves how a video was created.
 5. Ask about the previous battery post. Recent demo-app context and conversation remain available.
 
-Three demo frontends are seeded. The recent-context store can hold five distinct demo apps, currently at most three. It updates the visible passage/card as you scroll and remembers each demo app's latest context. All personas, claims and study details are fictional demonstration content. Likes/saves affect local prototype state only.
+Four demo frontends are included. The recent-context store can hold five distinct demo apps, currently at most four. It updates the visible passage/card as you scroll and remembers each demo app's latest context. Finance contains sourced historical results; social/news personas, claims and study details are fictional demonstration content. Likes/saves affect local prototype state only.
 
 **Check this is a contextual critique, not a verified fact-check or forensic AI detector.** The model sees visible text/captions and descriptions of demo artwork; it does not search the web or inspect real video frames. It identifies unsupported claims, explains uncertainty, and suggests what evidence to check.
 
@@ -53,7 +59,7 @@ Bitrig can open the existing local Xcode project and display its folding simulat
 
 - `python3 scripts/check_scaffold.py`: project/resource wiring only.
 - `bash tests/run_context_tests.sh`: 35 Foundation source/transport/screen-payload cases.
-- `python3 tests/run_demo_store_tests.py`: 11 production demo-store state cases with UI wrappers stubbed.
+- `python3 tests/run_demo_store_tests.py`: 13 production demo-store state cases with UI wrappers stubbed.
 - `node --test tests/server.test.mjs`: 11 server/provider mapping and failure/cancellation cases using mocked providers.
 - `scripts/build.sh`: actual Simulator build, requires Xcode.
 

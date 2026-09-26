@@ -1,3 +1,13 @@
+# Latest handoff — earnings and shared visual direction
+
+Pull `demo/live-session` / [draft PR #1](https://github.com/TriNguyen1110/duosync/pull/1). Finance is now the default fourth frontend, using sourced historical Alphabet FY2024 results and a computed two-year capex chart. Both native source and browser preview share warm ivory/charcoal/orange workspace styling, serif empty headline, concise replies, source card and pet controls. Finance has a restrained purple accent.
+
+Rehearse: Finance → scroll to capex → ask why spending rose → close while answering → pet completion bubble → reopen → Feed → ask about the prior report. Current visible content and recent contexts attach automatically. Do not say these are live quotes or ten-year comparisons.
+
+Portable checks and browser interaction checks pass; native build, Duo folding, keyboard and VoiceOver still need the teammate’s Xcode27.1 beta run. Earlier handoff notes below are historical and may describe superseded scopes.
+
+---
+
 # Current demo handoff — frontend clones
 
 The latest user clarification supersedes earlier capture-first plans below: **clone familiar frontends inside DuoSync for the demo**. Default Demo apps mode provides Safari-like news, Feed and Reels, automatic visible-source attachment, recent app context, persistent chat, pet status and a real GPT-5 nano Check this response. No screen-sharing permission or actual app integration is required.

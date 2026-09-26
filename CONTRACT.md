@@ -79,3 +79,10 @@ The user now explicitly requests a real assistant conversation alongside reading
 User explicitly clarified that familiar app frontends should be cloned for the hackathon demo, not integrated as actual apps. Make Safari-style news, social feed, and Reels-style views the default owned frontend surfaces. No accounts, real social actions, screen recording, or permission prompts are needed for this demo. Retain capture code as an experimental path only.
 
 The assistant automatically receives the visible demo card/article as scrolling changes focus, plus up to five recently viewed demo app contexts. Preserve conversation across app switches. A small Demo label distinguishes fictional seeded material from actual Safari/social services. The pet opens/closes the assistant next to the clone surface. 'Check this' runs real GPT-5 nano on the visible source: identify unsupported claims and explain uncertainty; do not present model opinion as verified fact-checking or reliable AI-media detection. No fabricated web searches/citations/probabilities. Current transport sees text/captions, not video pixels.
+
+
+## Earnings and visual sync — September 26
+
+Add a fourth Finance frontend, initially showing sourced Alphabet FY2024 annual results (historical, not live quotes). Use revenue/operating earnings/EPS and a two-year 2023–2024 capex comparison from the official 2024 Form 10-K. Calculate growth from rounded reported $32.3B/$52.5B, label rounding; never invent ten-year or peer data. Keep fictional feed/news labels separate from these real historical figures in attached context. Preserve the other three demo apps and conversation across switches.
+
+Match teammate’s warm ivory, charcoal, orange-accent workspace, 8px spacing rhythm, white source/composer cards and editorial serif empty-state headline. Retain DuoSync branding and pet controls. Finance uses a restrained purple accent. Preview opens the workspace at wide sizes and keeps it closed on compact screens. Verify contrast, source changes, response feedback, close/reopen persistence and compact access before handoff. Native SCREEN remains review without Xcode evidence.
