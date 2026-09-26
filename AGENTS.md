@@ -3,10 +3,10 @@
 ## Scope and clock
 
 YC × Bitrig, September 26, 2026. Hacking 11:30–15:30 PDT; feature freeze 14:45.
-Current user request: start building the focused hackathon demo with the adapted hacker-kit agents. Prioritize the offline journey, then verified Duo integration; optional live AI comes last.
+Current user request: frontend clones for the hackathon demo—Safari-style news, social feed and Reels inside DuoSync, automatic visible context and a pet assistant beside them. The frontend-demo clarification in CONTRACT.md supersedes actual-app/screen-capture-first scope.
 
-Build one journey: read → select → pet → visual explanation → return to reading.
-SwiftUI + WebKit, iOS 17 baseline, Xcode 27.1 beta for verified Duo-specific APIs. No dependencies initially. No backend until the offline journey works.
+Build one journey: scroll a demo feed → pet → Check this → real cautious claim critique → continue scrolling → follow-up about recent content.
+SwiftUI + iOS 17 baseline, Xcode 27.1 beta for verified Duo-specific APIs. The local server uses GPT-5 nano; real provider reply has been checked. Do not add real account integrations or system-capture dependencies to the primary demo.
 Twenty-minute builder ticks; at 30 minutes blocked, report and use the documented fallback. No refactors or architecture for future reuse.
 
 | Blocker | Fallback |
@@ -17,7 +17,7 @@ Twenty-minute builder ticks; at 30 minutes blocked, report and use the documente
 | Duo SDK missing | Ordinary adaptive layout for development; Duo requirement remains unverified |
 | Xcode absent | Validate scaffold only; never claim native build/UI success |
 
-Cut voice, live provider, arbitrary PDF support, then extra visualizations. Keep the pet, one grounded visual, Duo verification, and demo recording in the build plan.
+Cut voice, arbitrary PDF support, then extra visualizations. Keep real conversation integration in scope. Keep the pet, one grounded visual, Duo verification, and demo recording in the build plan.
 
 ## Ownership and agent use
 

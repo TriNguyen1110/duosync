@@ -33,7 +33,7 @@ for phase_id in target["buildPhases"]:
         assert (location.is_dir() if name.endswith(".xcassets") else location.is_file()), f"Unresolved build resource: {name}"
         referenced.add(name)
 assert referenced == {"DuoSyncApp.swift", "BrowserView.swift", "ContentView.swift", "Reading.html",
-                      "Models.swift", "PendulumView.swift", "DuoLayout.swift", "CompanionPet.swift", "Assets.xcassets"}
+                      "Models.swift", "PendulumView.swift", "DuoLayout.swift", "CompanionPet.swift", "ScreenContextStore.swift", "DemoApps.swift", "Assets.xcassets"}
 scheme = ET.parse(root / "DuoSync.xcodeproj/xcshareddata/xcschemes/DuoSync.xcscheme")
 for reference in scheme.findall(".//BuildableReference"):
     assert reference.attrib["BlueprintIdentifier"] == target_ids[0]
@@ -48,4 +48,4 @@ for row in rows[1:]:
     if row[1] == "item":
         assert row[3] in {"backlog", "doing", "review", "done", "blocked", "delayed"}
 print("PASS: project sources/resource, scheme, required files, and board format")
-print("UNVERIFIED: iOS compilation, pet/browser runtime behavior, Duo SDK, live AI")
+print("NOT CHECKED HERE: iOS compilation, native capture/UI, Duo SDK, live provider")
