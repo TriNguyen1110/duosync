@@ -3,10 +3,10 @@
 ## Scope and clock
 
 YC × Bitrig, September 26, 2026. Hacking 11:30–15:30 PDT; feature freeze 14:45.
-Current user request: start building the focused hackathon demo with the adapted hacker-kit agents. Prioritize the offline journey, then verified Duo integration; optional live AI comes last.
+Current user request: start building the focused hackathon demo with the adapted hacker-kit agents. Current priority: a real source-bound conversation with a floating AssistiveTouch-style pet, then verified Duo integration. The September 26 live conversation addendum in CONTRACT.md supersedes the original offline-only scope.
 
 Build one journey: read → select → pet → visual explanation → return to reading.
-SwiftUI + WebKit, iOS 17 baseline, Xcode 27.1 beta for verified Duo-specific APIs. No dependencies initially. No backend until the offline journey works.
+SwiftUI + WebKit, iOS 17 baseline, Xcode 27.1 beta for verified Duo-specific APIs. No dependencies initially. The local server now connects both clients to a server-side provider; never substitute canned text for live replies.
 Twenty-minute builder ticks; at 30 minutes blocked, report and use the documented fallback. No refactors or architecture for future reuse.
 
 | Blocker | Fallback |
@@ -17,7 +17,7 @@ Twenty-minute builder ticks; at 30 minutes blocked, report and use the documente
 | Duo SDK missing | Ordinary adaptive layout for development; Duo requirement remains unverified |
 | Xcode absent | Validate scaffold only; never claim native build/UI success |
 
-Cut voice, live provider, arbitrary PDF support, then extra visualizations. Keep the pet, one grounded visual, Duo verification, and demo recording in the build plan.
+Cut voice, arbitrary PDF support, then extra visualizations. Keep real conversation integration in scope. Keep the pet, one grounded visual, Duo verification, and demo recording in the build plan.
 
 ## Ownership and agent use
 

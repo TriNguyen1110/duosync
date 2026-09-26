@@ -29,3 +29,9 @@ Capture evidence from the booted Simulator at the reader, open workspace, and cl
 If iOS collapses selection when the assistant opens, fix capture timing before the demonstration. Do not bypass the issue by silently substituting a hard-coded quote.
 
 Selections are captured only when the user taps **Explore selection**. Existing source cards are snapshots; social-feed updates and history-only single-page-app navigation do not automatically refresh them. Re-select and tap Explore after the page changes. The bundled reading lesson remains the reliable judged demo path.
+
+## Real session update — September 26, 13:28 PDT
+
+The live-chat slice adds a persistent conversation, selected-source attachment, follow-ups, Stop/retry and actual pet status. Run the local provider server from `server/README.md` on the same Mac as the iOS Simulator, then test read → select → pet → Send → close while waiting → reopen → follow-up. No provider key is configured on the coordinator’s Mac, so the online session currently shows the expected setup error. No live reply or native build has been verified.
+
+Portable evidence: 25 Foundation tests, 10 mocked-provider server tests, Swift parsing with/without DUO_SDK and scaffold checks pass. Online preview evidence: a real selected passage was attached; Send reached the server and showed its missing-configuration error; closing showed the pet’s error bubble and reopening retained the question and attachment. Progressier uses separate inner/outer web frames, so its fold controls are only a layout preview and do not prove native folding/session continuity.

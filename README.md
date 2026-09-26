@@ -2,7 +2,7 @@
 
 A little companion for what you're looking at. Read articles, browse social feeds, study a PDF, or explore an earnings report with an agent workspace beside the content. The first implementation uses an embedded web browser and a floating animated pet.
 
-**YC × Bitrig Hacks · September 26, 2026 · work in progress.** The first offline reading journey is implemented in source. Foundation context tests pass; native iOS/WebKit, pet interaction, and the compile-gated Duo layout still need the teammate’s Xcode 27.1 beta build and Simulator evidence. Live AI, voice, and PDF extraction are not connected.
+**YC × Bitrig Hacks · September 26, 2026 · work in progress.** The first offline reading journey is implemented in source. Foundation context tests pass; native iOS/WebKit, pet interaction, and the compile-gated Duo layout still need the teammate’s Xcode 27.1 beta build and Simulator evidence. Real conversation transport is implemented for OpenAI or Anthropic via a local server; provider credentials and an actual model round-trip remain unverified. Voice and PDF extraction are not connected.
 
 ## Start
 
@@ -23,6 +23,14 @@ If you already cloned it, run `git pull --ff-only` from that checkout before ope
 
 `tests/run_context_tests.sh` runs the Foundation context regressions with Command Line Tools. `python3 scripts/check_scaffold.py` checks repository wiring without Xcode. With Xcode selected, `scripts/build.sh` compiles for a generic iOS Simulator. These are different checks: the first cannot prove the app compiles or its interface works.
 
+## Real assistant session
+
+Start the [local assistant server](server/README.md) on the same Mac as your iOS Simulator. Configure the provider, model, and API key only in its ignored local `server/.env`. No keys belong in the app or browser.
+
+Select a passage → tap the pet → type a question → Send. The assistant workspace keeps the conversation and source attached for follow-up questions. Close it to keep reading; the pet shows actual waiting, completion, or error status, and reopening restores the session. Stop cancels the request. Navigating to a new document clears the native conversation so it cannot reuse the wrong source. A missing API configuration produces a setup error.
+
+The browser session at `http://127.0.0.1:8766/design/pet-preview.html?embed=1` uses the same chat connection and can be loaded into an online Duo shell. This is an interaction preview; the SwiftUI app must still be built with Xcode/Bitrig for the native Duo demo.
+
 ## View in Device Hub
 
 Device Hub displays the app that Xcode builds and installs on a simulator. You do not upload a GitHub URL or Swift source files to Device Hub.
@@ -32,7 +40,7 @@ Device Hub displays the app that Xcode builds and installs on a simulator. You d
 3. Choose **iPhone Duo** as the run destination. If it is missing, open **Xcode → Open Developer Tool → Device Hub** (or **Manage Devices…** in the run-destination menu), click **+**, and create an iOS 27.1 / iPhone Duo simulator. Install the runtime first if that configuration is unavailable.
 4. For our Duo-specific layout, select the DuoSync target → **Build Settings → Swift Compiler – Custom Flags → Active Compilation Conditions** and add `DUO_SDK` for the configuration you run. Keep the existing inherited/Debug conditions. Without this flag, the app uses its ordinary adaptive layout.
 5. Press **⌘R** in Xcode. After a successful build, Xcode installs and launches the app; Device Hub opens its interactive screen automatically.
-6. Tap **Demo**, select a sentence in the reading page, tap the pet, then **Explore selection**. Use the [native handoff checklist](docs/TEAM_HANDOFF.md) to verify reading, pet, and folded layouts.
+6. Tap **Demo**, select a sentence in the reading page, tap the pet, then ask a question and **Send**. **Open bundled lesson** remains a separate prewritten visual. Use the [native handoff checklist](docs/TEAM_HANDOFF.md) to verify reading, pet, and folded layouts.
 
 For a physical iPhone, connect it to the Mac, trust the Mac, pair it in Device Hub, and enable Developer Mode when prompted. Choose a signing team in Xcode, select that device as the run destination, and press ⌘R. In Device Hub, choose the device and **View Screen**. The hackathon Duo demo uses the simulator.
 
@@ -53,9 +61,9 @@ Sources: [Bitrig's Duo setup](https://bitrig.com/blog/bitrig-builds-iphone-duo-a
 
 ## The one demo we're building
 
-Read a physics explanation → select a confusing passage → tap the pet → explore an interactive pendulum explanation → close the workspace without losing your reading position. On Duo, use the fold-aware arrangement to keep reading and exploration together.
+Read a passage → select it → tap the pet → ask a question → keep reading while the assistant answers → reopen for a follow-up. On Duo, keep reading and conversation side by side. The prewritten pendulum visual remains an explicitly labeled offline fallback.
 
-Implemented source includes a persistent `WKWebView`, draggable animated pixel-art companion roster with closed-state activity bubbles, source-bound selection capture, an explicitly prewritten pendulum explanation, and an interactive small-angle visual. Bubble copy is playful but reflects local app state; it does not claim background AI work. Arbitrary pages can supply a selection but do not receive a fabricated answer. The `DUO_SDK` build flag enables the documented native arrangement path; it still needs SDK/runtime verification. [Preview the companion interaction](design/pet-preview.html) in a browser; this is a design preview, not the running iOS app.
+Implemented source includes a persistent `WKWebView`, draggable animated pixel-art companion roster with closed-state activity bubbles, source-bound selection capture, an explicitly prewritten pendulum explanation, and an interactive small-angle visual. Bubble copy is playful but reflects local app state; it does not claim background AI work. Arbitrary readable web pages can supply a selection for real chat through the configured local server; no fabricated answer is used when the connection is missing. The `DUO_SDK` build flag enables the documented native arrangement path; it still needs SDK/runtime verification. [Preview the companion interaction](design/pet-preview.html) in a browser; this is a design preview, not the running iOS app.
 
 ## Build order
 
@@ -65,7 +73,7 @@ Implemented source includes a persistent `WKWebView`, draggable animated pixel-a
 | 2 | Selected passage + source identity from the current browser document | backend |
 | 3 | Deterministic, labeled pendulum visual and source card | frontend |
 | 4 | Duo `ArrangementView` with shared browser/workspace state | frontend |
-| 5 | Optional live reasoning through a server-side provider | backend |
+| 5 | Real conversation through a server-side provider | backend + main |
 | 6 | Simulator/device rehearsal, recording, and pitch | verifier + main |
 
 Freeze features at **14:45 PDT**. Use **14:45–15:15** for verification and recording, then submission/rehearsal before the **15:30** judging window. Do not spend the deadline on voice, auth, email, ride booking, or system settings.
