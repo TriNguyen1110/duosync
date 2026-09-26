@@ -30,7 +30,7 @@ struct PendulumView: View {
                 GeometryReader { geometry in
                     let pivot = CGPoint(x: geometry.size.width / 2, y: 16)
                     let radius = CGFloat(65 + length * 43)
-                    let bob = CGPoint(x: pivot.x + radius * sin(angle), y: pivot.y + radius * cos(angle))
+                    let bob = CGPoint(x: pivot.x + radius * CGFloat(sin(angle)), y: pivot.y + radius * CGFloat(cos(angle)))
                     Path { path in
                         path.move(to: CGPoint(x: pivot.x - 30, y: pivot.y))
                         path.addLine(to: CGPoint(x: pivot.x + 30, y: pivot.y))

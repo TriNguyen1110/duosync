@@ -171,8 +171,20 @@ struct AssistantWorkspace: View {
             Label("From your reading", systemImage: "text.quote")
                 .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Text(title).font(.subheadline.weight(.semibold))
-            Text(url.absoluteString).font(.caption2).foregroundStyle(.secondary)
-                .textSelection(.enabled)
+            if url.isFileURL {
+                Button(action: close) {
+                    Label("Return to bundled reading", systemImage: "book")
+                }
+                .font(.caption.weight(.semibold))
+                Text(url.absoluteString).font(.caption2).foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            } else {
+                Link(destination: url) {
+                    Label(url.absoluteString, systemImage: "arrow.up.right.square")
+                        .font(.caption)
+                }
+                .accessibilityLabel("Open source: \(title)")
+            }
             Text("“\(quote)”").font(.subheadline).textSelection(.enabled)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
