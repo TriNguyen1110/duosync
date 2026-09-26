@@ -1,10 +1,16 @@
 import SwiftUI
 import UIKit
 
+private enum ContextSource: Equatable { case demo, screen, browser }
+private let quickCheckPrompt = "Check the current post/article for unsupported or misleading claims. Separate evidence from inference, explain red flags, and say what needs verification. For AI-generated media, do not claim certainty or a probability from caption/illustration alone."
+
 struct ContentView: View {
     @StateObject private var browser = BrowserStore()
     @StateObject private var screens = ScreenContextStore()
-    @State private var screenMode = true
+    @StateObject private var demoStore = DemoAppStore()
+    @State private var contextSource = ContextSource.demo
+    private var demoMode: Bool { contextSource == .demo }
+    private var screenMode: Bool { contextSource == .screen }
     @State private var workspaceOpen = false
     @State private var draft = ""
     @State private var lastSubmitted = ""
@@ -21,7 +27,13 @@ struct ContentView: View {
             ZStack {
                 VStack(spacing: 0) {
                     header
-                    if screenMode {
+                    if demoMode {
+                        DuoLayout(workspaceOpen: workspaceOpen) {
+                            DemoAppsView(store: demoStore)
+                        } workspace: {
+                            assistant
+                        }
+                    } else if screenMode {
                         if workspaceOpen {
                             assistant
                         } else {
@@ -41,8 +53,8 @@ struct ContentView: View {
             .background(Color(.systemBackground))
         }
         .tint(Color(red: 0.10, green: 0.49, blue: 0.36))
-        .onChange(of: screenMode) { _, newValue in
-            if !newValue { screens.stopCapture() }
+        .onChange(of: contextSource) { _, newValue in
+            if newValue != .screen { screens.stopCapture() }
             browser.clearConversation()
             draft = ""
             lastSubmitted = ""
@@ -50,7 +62,8 @@ struct ContentView: View {
     }
 
     private var assistant: some View {
-        AssistantWorkspace(browser: browser, screens: screens, screenMode: screenMode,
+        AssistantWorkspace(browser: browser, screens: screens, demoStore: demoStore,
+                           screenMode: screenMode, demoMode: demoMode,
                            selectedSpecies: $selectedSpecies, draft: $draft,
                            lastSubmitted: $lastSubmitted, close: toggleWorkspace,
                            clearSession: clearScreenSession)
@@ -73,21 +86,21 @@ struct ContentView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
-                if !screenMode { Button("Demo", action: browser.loadDemo)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.vertical, 10).padding(.horizontal, 14)
-                    .background(Color.accentColor.opacity(0.09), in: Capsule())
+                if demoMode {
+                    Text("Demo").font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 }
+                Menu {
+                    Button("Demo apps") { contextSource = .demo }
+                    Section("Optional sources · starts a new chat") {
+                        Button("Screen sharing · experimental") { contextSource = .screen }
+                        Button("Browser · experimental") { contextSource = .browser }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle").font(.title3).frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Choose context source")
             }
-            Picker("Context source", selection: $screenMode) {
-                Text("Shared screen").tag(true)
-                Text("Browser fallback").tag(false)
-            }
-            .pickerStyle(.segmented)
-            .accessibilityHint("Changing source starts a new conversation")
-            Text("Switching sources starts a new chat.")
-                .font(.caption2).foregroundStyle(.secondary)
-            if !screenMode { HStack(spacing: 10) {
+            if !screenMode && !demoMode { HStack(spacing: 10) {
                 Image(systemName: "globe").foregroundStyle(.secondary)
                 TextField("Read here, or enter a URL", text: $browser.address)
                     .keyboardType(.URL)
@@ -104,7 +117,7 @@ struct ContentView: View {
             .padding(12)
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
             }
-            if !screenMode, let error = browser.errorMessage, !workspaceOpen {
+            if !screenMode && !demoMode, let error = browser.errorMessage, !workspaceOpen {
                 Text(error).font(.caption).foregroundStyle(.red)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -123,6 +136,12 @@ struct ContentView: View {
     }
 
     private var companionMessage: String {
+        if demoMode {
+            if browser.isResponding { return "Checking the context. Keep exploring — I’m on it." }
+            if browser.chatError != nil { return "A little plot twist. Tap me to take a look." }
+            if browser.messages.last?.role == "assistant" { return "Your reply is ready. Want to dig a little deeper?" }
+            return "Something curious? I’ve kept your recent apps in mind."
+        }
         if screenMode {
             if browser.isResponding { return "Working with your remembered screens. Keep going." }
             if browser.chatError != nil || screens.errorMessage != nil { return "A little plot twist. Tap me to take a look." }
@@ -219,7 +238,9 @@ struct ContentView: View {
 struct AssistantWorkspace: View {
     @ObservedObject var browser: BrowserStore
     @ObservedObject var screens: ScreenContextStore
+    @ObservedObject var demoStore: DemoAppStore
     let screenMode: Bool
+    let demoMode: Bool
     @Binding var selectedSpecies: String
     @Binding var draft: String
     @Binding var lastSubmitted: String
@@ -228,10 +249,13 @@ struct AssistantWorkspace: View {
     let clearSession: () -> Void
 
     private var species: CompanionSpecies { CompanionSpecies(rawValue: selectedSpecies) ?? .corgi }
-    private var screenContext: PageContext? { ScreenContextPayload.make(snapshots: screens.snapshots) }
+    private var screenContext: PageContext? {
+        demoMode ? demoStore.context : ScreenContextPayload.make(snapshots: screens.snapshots)
+    }
+    private var automaticContext: Bool { demoMode || screenMode }
 
     private func send(_ prompt: String) {
-        if screenMode {
+        if automaticContext {
             guard let context = screenContext else { return }
             browser.sendScreenMessage(prompt, context: context)
         } else {
@@ -292,8 +316,21 @@ struct AssistantWorkspace: View {
                         if browser.messages.isEmpty {
                             Text("Keep the thought going.")
                                 .font(.system(.title2, design: .rounded, weight: .bold))
-                            Text(screenMode ? "Use Safari or another app alongside DuoSync. Once you start screen sharing, ask about the current and recent remembered screens — no selection needed." : "Select a passage in the reader, then ask a question. This conversation stays here when you close the workspace.")
+                            Text(demoMode ? "Ask about what’s on screen, or something you saw a moment ago. Your recent apps come along automatically." : screenMode ? "Use Safari or another app alongside DuoSync. Once you start screen sharing, ask about the current and recent remembered screens — no selection needed." : "Select a passage in the reader, then ask a question. This conversation stays here when you close the workspace.")
                                 .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        if demoMode {
+                            DisclosureGroup("Current app + \(max(0, demoStore.recentContexts.count - 1)) recent") {
+                                ForEach(demoStore.recentContexts, id: \.documentID) { context in
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text(context.title).font(.caption.weight(.semibold))
+                                        Text(context.selection).font(.caption).lineLimit(4)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .padding(.vertical, 5)
+                                }
+                            }
+                            .font(.caption)
                         }
                         if screenMode {
                             DisclosureGroup("Screen context · \(screens.snapshots.count) of 5 remembered") {
@@ -306,7 +343,7 @@ struct AssistantWorkspace: View {
                             }
                         }
                         if let context = browser.context {
-                            DisclosureGroup("\(screenMode ? "Last question’s screen context" : "Attached passage") · \(context.title)") {
+                            DisclosureGroup("\(automaticContext ? "Used for the last question" : "Attached passage") · \(context.title)") {
                                 sourceCard(title: context.title, url: context.url, quote: context.selection)
                             }
                             .font(.caption)
@@ -315,7 +352,7 @@ struct AssistantWorkspace: View {
                             VStack(alignment: .leading, spacing: 7) {
                                 Text(message.role == "user" ? "YOU" : "DUOSYNC")
                                     .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                                Text(message.content).font(.body).textSelection(.enabled)
+                                Text(message.content == quickCheckPrompt ? "Check this" : message.content).font(.body).textSelection(.enabled)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(16)
@@ -333,11 +370,11 @@ struct AssistantWorkspace: View {
                                     .font(.subheadline).foregroundStyle(.red)
                                 if !lastSubmitted.isEmpty {
                                     Button("Retry last question") { send(lastSubmitted) }
-                                        .disabled(browser.isResponding || (screenMode && screenContext == nil))
+                                        .disabled(browser.isResponding || (automaticContext && screenContext == nil))
                                 }
                             }
                         }
-                        if !screenMode && !browser.isResponding && browser.messages.isEmpty {
+                        if !automaticContext && !browser.isResponding && browser.messages.isEmpty {
                             DisclosureGroup("Try the offline pendulum lesson") {
                                 VStack(alignment: .leading, spacing: 14) {
                                     Text("Bundled demo · prewritten lesson, separate from live chat")
@@ -362,13 +399,22 @@ struct AssistantWorkspace: View {
                 .onChange(of: browser.chatError) { _, _ in proxy.scrollTo("conversation-bottom", anchor: .bottom) }
             }
             VStack(alignment: .leading, spacing: 10) {
-                TextField(screenMode ? "Ask about your recent screens…" : "Ask about your selected passage…", text: $draft, axis: .vertical)
+                if demoMode {
+                    Button("Check this", systemImage: "checkmark.shield") {
+                        guard screenContext != nil else { return }
+                        lastSubmitted = quickCheckPrompt
+                        send(quickCheckPrompt)
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .disabled(browser.isResponding || screenContext == nil)
+                }
+                TextField(demoMode ? "Ask about this, or something you just saw…" : screenMode ? "Ask about your recent screens…" : "Ask about your selected passage…", text: $draft, axis: .vertical)
                     .lineLimit(1...5)
                     .padding(12)
                     .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
                     .accessibilityLabel("Message your assistant")
                 HStack {
-                    Text(screenMode ? (screenContext == nil ? "Start sharing to add screen context" : "Recent \(screens.snapshots.count) screens attach on Send") : (browser.context == nil ? "Selection attaches on first send" : "Using the attached passage"))
+                    Text(demoMode ? "Current app + recent context" : screenMode ? (screenContext == nil ? "Start sharing to add screen context" : "Recent \(screens.snapshots.count) screens attach on Send") : (browser.context == nil ? "Selection attaches on first send" : "Using the attached passage"))
                         .font(.caption2).foregroundStyle(.secondary)
                     Spacer()
                     if browser.isResponding {
@@ -379,12 +425,12 @@ struct AssistantWorkspace: View {
                             let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
                             guard !prompt.isEmpty, prompt.utf16.count <= 4000 else { return }
                             lastSubmitted = prompt
-                            guard !screenMode || screenContext != nil else { return }
+                            guard !automaticContext || screenContext != nil else { return }
                             send(prompt)
                             draft = ""
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.utf16.count > 4000 || browser.isCapturing || (screenMode && screenContext == nil))
+                        .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || draft.utf16.count > 4000 || browser.isCapturing || (automaticContext && screenContext == nil))
                     }
                 }
                 if draft.utf16.count > 4000 { Text("This message is too long. Shorten it to send.").font(.caption).foregroundStyle(.red) }
@@ -398,10 +444,12 @@ struct AssistantWorkspace: View {
 
     private func sourceCard(title: String, url: URL, quote: String) -> some View {
         VStack(alignment: .leading, spacing: 9) {
-            Label(screenMode ? "Recognized screen text · may contain errors" : "From your reading", systemImage: screenMode ? "rectangle.on.rectangle" : "text.quote")
+            Label(demoMode ? "From your recent apps" : screenMode ? "Recognized screen text · may contain errors" : "From your reading", systemImage: automaticContext ? "rectangle.on.rectangle" : "text.quote")
                 .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             Text(title).font(.subheadline.weight(.semibold))
-            if screenMode {
+            if demoMode {
+                Text("Demo content").font(.caption2).foregroundStyle(.secondary)
+            } else if screenMode {
                 Text("From user-shared screens. No app identity or page URL was inferred.")
                     .font(.caption2).foregroundStyle(.secondary)
             } else if url.isFileURL {
