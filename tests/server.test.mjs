@@ -77,3 +77,9 @@ test('disconnect aborts provider',async()=>{
  await Promise.race([aborted,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Provider not cancelled')),1000))]);
  });
 });
+
+test('gpt-5-nano minimal reasoning mapping keeps phone response budget',async()=>{
+ let payload;
+ await reply(body(),configuration({...env,AI_MODEL:'gpt-5-nano'}),undefined,async(_url, options)=>{payload=JSON.parse(options.body);return answer();});
+ assert.deepEqual(payload.reasoning,{effort:'minimal'}); assert.equal(payload.model,'gpt-5-nano'); assert.equal(payload.max_output_tokens,1600);
+});

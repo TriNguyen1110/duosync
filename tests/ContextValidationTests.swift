@@ -67,6 +67,24 @@ struct ContextValidationTests {
         rejectsChat("server failure") { _ = try ChatTransport.reply(data: Data("{\"error\":\"Not configured\"}".utf8), statusCode: 503) }
         rejectsChat("empty answer") { _ = try ChatTransport.reply(data: Data("{\"text\":\" \"}".utf8), statusCode: 200) }
         rejectsChat("oversized response") { _ = try ChatTransport.reply(data: Data(repeating: 32, count: 128001), statusCode: 200) }
+        check(ScreenContextPayload.make(snapshots: []) == nil, "Empty observed history cannot produce context")
+        check(ScreenContextPayload.make(snapshots: [ScreenSnapshot(text: " \n ")]) == nil, "Whitespace observations ignored")
+        let snapshots = (0..<7).map { ScreenSnapshot(text: "Snapshot marker \($0)", capturedAt: Date(timeIntervalSince1970: Double($0))) }
+        let screen = ScreenContextPayload.make(snapshots: snapshots)!
+        check(screen.documentID == snapshots[6].id && screen.capturedAt == snapshots[6].capturedAt, "Latest screen identity selected")
+        check(screen.selection == snapshots[6].text && screen.text.contains(screen.selection), "Screen selection bound exactly to newest observation")
+        check(screen.text.contains("Snapshot marker 2") && !screen.text.contains("Snapshot marker 1") && !screen.text.contains("Snapshot marker 0"), "Only latest five observations attached")
+        let latestIndex = screen.text.range(of: "Snapshot marker 6")!.lowerBound
+        let previousIndex = screen.text.range(of: "Snapshot marker 5")!.lowerBound
+        check(latestIndex < previousIndex, "Observations newest first")
+        let emojiScreens = (0..<5).map { ScreenSnapshot(text: String(repeating: "😀", count: 2001), capturedAt: Date(timeIntervalSince1970: Double($0))) }
+        let boundedScreen = ScreenContextPayload.make(snapshots: emojiScreens)!
+        check(boundedScreen.selection.utf16.count == 2000 && boundedScreen.text.utf16.count <= 12000, "Five OCR excerpts remain within UTF16 limits")
+        _ = try ChatTransport.requestBody(messages: [ChatMessage(role: "user", content: "Compare screens")], context: boundedScreen)
+        checks += 1
+        check(ContextValidation.bundledExplanation(for: screen, bundledURL: bundle) == nil, "Screen observations cannot receive bundled lesson")
+        let emptyNewest = ScreenContextPayload.make(snapshots: snapshots + [ScreenSnapshot(text: " ", capturedAt: Date(timeIntervalSince1970: 100))])!
+        check(emptyNewest.documentID == snapshots[6].id, "Blank latest frame excluded from payload")
         print("PASS: \(checks) Foundation context validation regressions")
         print("UNVERIFIED: WebKit navigation, stale callbacks, timeouts and native UI require Xcode/Simulator")
     }
