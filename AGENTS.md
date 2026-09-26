@@ -3,7 +3,7 @@
 ## Scope and clock
 
 YC × Bitrig, September 26, 2026. Hacking 11:30–15:30 PDT; feature freeze 14:45.
-Current user request: initialize the repository, not implement the whole demo. Do not treat the backlog as authorization to start every item during initialization.
+Current user request: start building the focused hackathon demo with the adapted hacker-kit agents. Prioritize the offline journey, then verified Duo integration; optional live AI comes last.
 
 Build one journey: read → select → pet → visual explanation → return to reading.
 SwiftUI + WebKit, iOS 17 baseline, Xcode 27.1 beta for verified Duo-specific APIs. No dependencies initially. No backend until the offline journey works.
@@ -21,7 +21,7 @@ Cut voice, live provider, arbitrary PDF support, then extra visualizations. Keep
 
 ## Ownership and agent use
 
-Use the adapted roles in `.claude/agents/` for bounded independent slices. Main owns setup, contracts, build settings, and release. Backend owns browser context/state/provider work. Frontend owns SwiftUI presentation. A **separate verifier agent** checks each committed review slice and alone may append `done`. Dispatch it with one scope: INIT, DATA, or SCREEN. Do not launch builders during an initialization-only request.
+Use the adapted roles in `.claude/agents/` for bounded independent slices. Main owns setup, contracts, build settings, and release. Backend owns browser context/state/provider work. Frontend owns SwiftUI presentation. A **separate verifier agent** checks each committed review slice and alone may append `done`. Dispatch it with one scope: INIT, DATA, or SCREEN. Run independent backend and frontend slices concurrently; keep the verifier independent.
 
 Codex: explicitly give delegated agents the matching role file; Claude: start in the repository root so the custom roles load. Never assume unavailable tools or a named model are installed. Do not create clones/worktrees/output folders directly in `~/Developer`; use the global permitted locations. Never `git stash`, overwrite another agent's changes, stage unrelated files, or bump shared dependencies mid-tick.
 
