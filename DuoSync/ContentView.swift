@@ -80,18 +80,10 @@ struct ContentView: View {
                 petPosition = bounded(CGPoint(x: origin.x + value.translation.width,
                                                y: origin.y + value.translation.height), in: size)
             }
-        return VStack(spacing: 2) {
-            HStack(spacing: 9) {
-                Capsule().frame(width: 5, height: workspaceOpen ? 5 : 10)
-                Capsule().frame(width: 5, height: workspaceOpen ? 5 : 10)
-            }
-            Text("⌣").font(.system(size: 19, weight: .bold))
-        }
-        .foregroundStyle(Color(red: 0.06, green: 0.19, blue: 0.15))
-        .frame(width: 62, height: 62)
-        .background(Color(red: 0.48, green: 0.91, blue: 0.74), in: RoundedRectangle(cornerRadius: 24))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(.white.opacity(0.7), lineWidth: 2))
-        .shadow(color: .black.opacity(0.15), radius: 12, y: 5)
+        return CompanionPet(
+            activity: browser.isCapturing ? .capturing : (browser.explanation == nil ? .idle : .ready),
+            workspaceOpen: workspaceOpen
+        )
         .contentShape(RoundedRectangle(cornerRadius: 24))
         // Exclusive recognition prevents a completed drag from also toggling the panel.
         .gesture(move.exclusively(before: TapGesture().onEnded { toggleWorkspace() }))
@@ -99,6 +91,7 @@ struct ContentView: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityLabel(workspaceOpen ? "Close assistant workspace" : "Open assistant workspace")
         .accessibilityHint("Drag to move your companion")
+        .accessibilityValue(browser.isCapturing ? "Reading selection" : (browser.explanation == nil ? "Ready to explore" : "Explanation ready"))
         .accessibilityAction { toggleWorkspace() }
         .position(current)
     }
