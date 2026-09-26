@@ -31,7 +31,7 @@ enum ContextValidation {
             case .invalidSource:
                 return "The page changed or could not be read. Select text on the current page and try again."
             case .emptySelection:
-                return "Select a sentence in the reading page, then tap Explore selection."
+                return "Select a sentence in the reading page, then send your question or explore it."
             case .selectionTooLong:
                 return "Select a shorter passage (up to 4,000 characters) and try again."
             case .selectionNotInSource:
@@ -62,5 +62,73 @@ enum ContextValidation {
                            quote: context.selection,
                            explanation: "This bundled lesson illustrates the small-angle pendulum model. A longer string gives a slower swing: the period grows with the square root of the length. Doubling the length increases the period by √2 (about 1.41), rather than doubling it. Adjust the length below to explore the model. This is a prewritten lesson, not an AI interpretation of your selected passage.",
                            mode: "bundled-demo", visual: "pendulum")
+    }
+}
+
+struct ChatMessage: Identifiable {
+    let id: UUID
+    let role: String
+    let content: String
+
+    init(id: UUID = UUID(), role: String, content: String) {
+        self.id = id
+        self.role = role
+        self.content = content
+    }
+}
+
+/// Portable validation/encoding for the native-to-local-server boundary.
+enum ChatTransport {
+    enum Failure: LocalizedError {
+        case invalidEndpoint, invalidMessages, invalidReply, server(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidEndpoint: return "Set assistantEndpoint to your local server's http or https /api/chat address."
+            case .invalidMessages: return "This conversation could not be sent. Clear it and ask a shorter question."
+            case .invalidReply: return "The assistant returned an invalid reply. Check the local server and retry."
+            case .server(let message): return message
+            }
+        }
+    }
+
+    private static func bounded(_ text: String) -> String {
+        var result = String(text.prefix(4_000))
+        while result.utf16.count > 4_000 { result.removeLast() }
+        return result
+    }
+
+    static func requestBody(messages: [ChatMessage], context: PageContext) throws -> Data {
+        _ = try ContextValidation.context(documentID: context.documentID, expectedURL: context.url,
+            reportedURL: context.url.absoluteString, title: context.title, text: context.text, selection: context.selection)
+        let history = Array(messages.suffix(20))
+        guard !history.isEmpty, history.last?.role == "user",
+              history.allSatisfy({ ["user", "assistant"].contains($0.role)
+                  && !$0.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                  && ($0.role == "assistant" || $0.content.utf16.count <= 4_000) }) else {
+            throw Failure.invalidMessages
+        }
+        let payload: [String: Any] = [
+            "messages": history.map { ["role": $0.role, "content": bounded($0.content)] },
+            "context": ["title": context.title, "url": context.url.absoluteString,
+                        "text": context.text, "selection": context.selection]
+        ]
+        return try JSONSerialization.data(withJSONObject: payload)
+    }
+
+    static func reply(data: Data, statusCode: Int) throws -> String {
+        guard data.count <= 128_000,
+              let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw Failure.invalidReply
+        }
+        guard (200..<300).contains(statusCode) else {
+            let detail = (payload["error"] as? String).map { String($0.prefix(500)) }
+            throw Failure.server(detail ?? "The assistant server rejected the request. Check its configuration and retry.")
+        }
+        guard let text = payload["text"] as? String,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw Failure.invalidReply
+        }
+        return text
     }
 }

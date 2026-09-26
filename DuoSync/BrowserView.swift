@@ -11,6 +11,13 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
     @Published private(set) var isCapturing = false
     @Published private(set) var isPageLoading = true
 
+    @Published private(set) var messages: [ChatMessage] = []
+    @Published private(set) var isResponding = false
+    @Published private(set) var chatError: String?
+
+    private var responseID = UUID()
+    private var responseTask: URLSessionDataTask?
+    private var responseTimeout: DispatchWorkItem?
     private var documentID = UUID()
     private var captureID = UUID()
     private var documentReady = false
@@ -51,12 +58,22 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
 
     /// Called only in response to a user action. No passive capture or model request.
     func exploreSelection() {
+        guard !isResponding else { return }
+        guard messages.isEmpty else {
+            chatError = "Clear this conversation before exploring another demo selection."
+            return
+        }
+        captureSelection(makeBundledExplanation: true) { _ in }
+    }
+
+    private func captureSelection(makeBundledExplanation: Bool, completion: @escaping (PageContext?) -> Void) {
         cancelCapture()
         context = nil
         explanation = nil
         errorMessage = nil
         guard documentReady, !webView.isLoading, let sourceURL = webView.url else {
             errorMessage = "Wait for the page to finish loading, then select a sentence and try again."
+            completion(nil)
             return
         }
         let requestedDocument = documentID
@@ -66,6 +83,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
             guard let self, self.captureID == requestID else { return }
             self.cancelCapture()
             self.errorMessage = "Reading the selection timed out. Select a sentence and try again."
+            completion(nil)
         }
         captureTimeout = timeout
         DispatchQueue.main.asyncAfter(deadline: .now() + 8, execute: timeout)
@@ -87,6 +105,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
             self.cancelCapture()
             guard self.documentReady, !self.webView.isLoading, self.webView.url == sourceURL else {
                 self.errorMessage = ContextValidation.Failure.invalidSource.localizedDescription
+                completion(nil)
                 return
             }
             do {
@@ -102,23 +121,140 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
                 let captured = try ContextValidation.context(documentID: requestedDocument,
                     expectedURL: sourceURL, reportedURL: url, title: title, text: text, selection: selection)
                 self.context = captured
-                self.explanation = ContextValidation.bundledExplanation(for: captured, bundledURL: self.bundledURL)
-                if self.explanation == nil {
-                    self.errorMessage = "Selection captured. Live reasoning isn't connected; open the bundled lesson to try its prewritten explanation."
+                if makeBundledExplanation {
+                    self.explanation = ContextValidation.bundledExplanation(for: captured, bundledURL: self.bundledURL)
+                    if self.explanation == nil {
+                        self.errorMessage = "Selection captured. Ask about it in chat, or open the bundled lesson for its prewritten explanation."
+                    }
                 }
                 if truncated {
                     self.errorMessage = (self.errorMessage.map { $0 + " " } ?? "")
                         + "Page capture was limited to the first 12,000 characters."
                 }
+                completion(captured)
             } catch let failure as ContextValidation.Failure {
                 self.errorMessage = failure.localizedDescription
+                completion(nil)
             } catch {
                 self.errorMessage = "Couldn't read this page's selection. Try selecting text again, or open the bundled lesson."
+                completion(nil)
             }
         }
     }
 
+    func sendMessage(_ prompt: String) {
+        guard !isResponding else { return }
+        let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !prompt.isEmpty, prompt.utf16.count <= 4_000 else {
+            chatError = "Write a question of 1–4,000 characters."
+            return
+        }
+        guard documentReady, !webView.isLoading else {
+            chatError = "Wait for the page to load, select a passage, and send again."
+            return
+        }
+        responseID = UUID()
+        let requestID = responseID
+        let requestedDocument = documentID
+        chatError = nil
+        isResponding = true
+        if !messages.isEmpty, let context, context.documentID == documentID, context.url == webView.url {
+            requestReply(prompt: prompt, context: context, requestID: requestID)
+        } else {
+            // A new conversation always reads the user's current selection explicitly.
+            messages = []
+            captureSelection(makeBundledExplanation: false) { [weak self] captured in
+                guard let self, self.responseID == requestID, self.documentID == requestedDocument else { return }
+                guard let captured else {
+                    self.isResponding = false
+                    self.chatError = self.errorMessage ?? "Select a passage, then send again."
+                    return
+                }
+                self.requestReply(prompt: prompt, context: captured, requestID: requestID)
+            }
+        }
+    }
+
+    private func requestReply(prompt: String, context: PageContext, requestID: UUID) {
+        do {
+            let endpoint = UserDefaults.standard.string(forKey: "assistantEndpoint") ?? "http://localhost:8766/api/chat"
+            guard let url = URL(string: endpoint), ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+                  url.host != nil else { throw ChatTransport.Failure.invalidEndpoint }
+            // Retrying a failed/stopped turn must not add another identical user message.
+            if messages.last?.role != "user" || messages.last?.content != prompt {
+                messages.append(ChatMessage(role: "user", content: prompt))
+            }
+            let body = try ChatTransport.requestBody(messages: messages, context: context)
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = body
+            request.timeoutInterval = 45
+            let requestedDocument = documentID
+            let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+                DispatchQueue.main.async {
+                    guard let self, self.responseID == requestID, self.documentID == requestedDocument else { return }
+                    self.responseTask = nil
+                    self.responseTimeout?.cancel()
+                    self.responseTimeout = nil
+                    self.isResponding = false
+                    guard self.webView.url == context.url else {
+                        self.clearConversation()
+                        self.chatError = "The page changed. Select a passage and start again."
+                        return
+                    }
+                    if let error {
+                        self.chatError = (error as NSError).code == NSURLErrorTimedOut
+                            ? "The assistant timed out. Check the local server, then retry."
+                            : "Couldn't reach the assistant. Start the local server on port 8766 and configure its provider key, then retry."
+                        return
+                    }
+                    do {
+                        let text = try ChatTransport.reply(data: data ?? Data(), statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0)
+                        self.messages.append(ChatMessage(role: "assistant", content: text))
+                    } catch {
+                        self.chatError = error.localizedDescription
+                    }
+                }
+            }
+            responseTask = task
+            let timeout = DispatchWorkItem { [weak self] in
+                guard let self, self.responseID == requestID else { return }
+                self.cancelResponse()
+                self.chatError = "The assistant timed out. Check the local server, then retry."
+            }
+            responseTimeout = timeout
+            DispatchQueue.main.asyncAfter(deadline: .now() + 45, execute: timeout)
+            task.resume()
+        } catch {
+            isResponding = false
+            chatError = error.localizedDescription
+        }
+    }
+
+    func cancelResponse() {
+        let wasResponding = isResponding
+        responseID = UUID()
+        responseTask?.cancel()
+        responseTask = nil
+        responseTimeout?.cancel()
+        responseTimeout = nil
+        if wasResponding { cancelCapture() }
+        isResponding = false
+        if wasResponding { chatError = "Response stopped. Send the same question to retry." }
+    }
+
+    func clearConversation() {
+        cancelResponse()
+        cancelCapture()
+        messages = []
+        chatError = nil
+        context = nil
+        explanation = nil
+    }
+
     func clearExplanation() {
+        guard !isResponding else { return }
         cancelCapture()
         explanation = nil
         errorMessage = nil
@@ -132,6 +268,7 @@ final class BrowserStore: NSObject, ObservableObject, WKNavigationDelegate {
     }
 
     private func invalidateDocument() {
+        clearConversation()
         cancelCapture()
         documentID = UUID()
         documentReady = false
